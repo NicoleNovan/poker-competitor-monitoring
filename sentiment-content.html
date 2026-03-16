@@ -1,0 +1,2228 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>舆情监控 - 内容分析</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f5f5f5; padding: 20px; }
+    .container { max-width: 1400px; margin: 0 auto; }
+    h1 { font-size: 28px; margin-bottom: 10px; color: #333; }
+    .subtitle { color: #666; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+    .week-selector { padding: 8px 16px; border: 1px solid #ddd; border-radius: 6px; background: white; font-size: 14px; cursor: pointer; }
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+    .stat-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .stat-number { font-size: 32px; font-weight: bold; color: #2563eb; margin-bottom: 5px; }
+    .stat-label { color: #666; font-size: 14px; }
+    .section { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+    .section-title { font-size: 20px; margin-bottom: 20px; color: #333; border-bottom: 2px solid #2563eb; padding-bottom: 10px; }
+    .category-filters { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+    .category-btn { padding: 10px 20px; border: 2px solid #e5e5e5; background: white; border-radius: 8px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 8px; }
+    .category-btn:hover { background: #f8f9fa; }
+    .category-btn.active { background: #2563eb; color: white; border-color: #2563eb; }
+    .platform-filter-btn { padding: 10px 20px; border: 2px solid #e5e5e5; background: white; border-radius: 8px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 8px; }
+    .platform-filter-btn:hover { background: #f8f9fa; }
+    .platform-filter-btn.active { background: #10b981; color: white; border-color: #10b981; }
+    .category-count { font-size: 18px; font-weight: bold; }
+    .category-label { font-size: 14px; }
+    .video-list { display: flex; flex-direction: column; gap: 15px; }
+    .video-item { display: flex; gap: 15px; padding: 15px; border: 1px solid #e5e5e5; border-radius: 8px; transition: all 0.2s; background: white; }
+    .video-item:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .video-thumbnail { width: 200px; height: 112px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
+    .video-content { flex: 1; }
+    .video-title { font-size: 16px; font-weight: 600; margin-bottom: 8px; color: #333; }
+    .video-meta { display: flex; gap: 15px; font-size: 13px; color: #666; margin-bottom: 8px; }
+    .video-stats { display: flex; gap: 20px; font-size: 13px; color: #999; }
+    .video-stat { display: flex; align-items: center; gap: 5px; }
+    .category-tag { display: inline-block; padding: 4px 10px; background: #e0e7ff; color: #3730a3; border-radius: 4px; font-size: 12px; margin-right: 8px; }
+    .platform-tag { display: inline-block; padding: 4px 10px; background: #fef3c7; color: #92400e; border-radius: 4px; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎬 舆情监控 - 内容分析</h1>
+    <div class="subtitle">
+      <span>按播放量排序 · 数据更新: 2026/3/16 10:30:25</span>
+      <select class="week-selector" onchange="location.reload()">
+        <option value="2026-W12" selected>2026-W12</option>
+      </select>
+    </div>
+    
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-number">92</div>
+        <div class="stat-label">本周视频总数</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">2,111,730</div>
+        <div class="stat-label">总播放量</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">22,954</div>
+        <div class="stat-label">平均播放量</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">7</div>
+        <div class="stat-label">监控平台数</div>
+      </div>
+    </div>
+    
+    <div class="section">
+      <div class="section-title">📊 内容类型筛选</div>
+      <div class="category-filters">
+        <button class="category-btn active" onclick="filterCategory('all')">
+          <span class="category-count">92</span>
+          <span class="category-label">全部</span>
+        </button>
+        
+          <button class="category-btn" onclick="filterCategory('other')">
+            <span class="category-count">58</span>
+            <span class="category-label">📦 其他</span>
+          </button>
+        
+          <button class="category-btn" onclick="filterCategory('tournament')">
+            <span class="category-count">12</span>
+            <span class="category-label">🏆 锦标赛</span>
+          </button>
+        
+          <button class="category-btn" onclick="filterCategory('stream')">
+            <span class="category-count">9</span>
+            <span class="category-label">🎮 直播/Vlog</span>
+          </button>
+        
+          <button class="category-btn" onclick="filterCategory('review')">
+            <span class="category-count">5</span>
+            <span class="category-label">📝 评测</span>
+          </button>
+        
+          <button class="category-btn" onclick="filterCategory('tutorial')">
+            <span class="category-count">6</span>
+            <span class="category-label">📚 教程/策略</span>
+          </button>
+        
+          <button class="category-btn" onclick="filterCategory('news')">
+            <span class="category-count">2</span>
+            <span class="category-label">📰 新闻</span>
+          </button>
+        
+      </div>
+    </div>
+    
+    <div class="section">
+      <div class="section-title">🏢 平台筛选</div>
+      <div class="category-filters">
+        <button class="platform-filter-btn active" onclick="filterPlatform('all')">
+          <span class="category-count">92</span>
+          <span class="category-label">全部平台</span>
+        </button>
+        
+          <button class="platform-filter-btn" onclick="filterPlatform('888poker')">
+            <span class="category-count">10</span>
+            <span class="category-label">888poker</span>
+          </button>
+        
+          <button class="platform-filter-btn" onclick="filterPlatform('ACR')">
+            <span class="category-count">25</span>
+            <span class="category-label">ACR</span>
+          </button>
+        
+          <button class="platform-filter-btn" onclick="filterPlatform('BetOnline')">
+            <span class="category-count">2</span>
+            <span class="category-label">BetOnline</span>
+          </button>
+        
+          <button class="platform-filter-btn" onclick="filterPlatform('CoinPoker')">
+            <span class="category-count">10</span>
+            <span class="category-label">CoinPoker</span>
+          </button>
+        
+          <button class="platform-filter-btn" onclick="filterPlatform('GGPoker')">
+            <span class="category-count">10</span>
+            <span class="category-label">GGPoker</span>
+          </button>
+        
+          <button class="platform-filter-btn" onclick="filterPlatform('Ignition')">
+            <span class="category-count">25</span>
+            <span class="category-label">Ignition</span>
+          </button>
+        
+          <button class="platform-filter-btn" onclick="filterPlatform('PokerStars')">
+            <span class="category-count">10</span>
+            <span class="category-label">PokerStars</span>
+          </button>
+        
+      </div>
+    </div>
+    
+    <div class="section">
+      <div class="section-title">🎥 视频列表（按播放量排序）</div>
+      <div class="video-list">
+        
+          <div class="video-item" data-category="other" data-platform="Ignition">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/U4h5Dw6iXps/default.jpg" alt="Prototype Meets His Creator (Eliot) 💀🔥 || Poppy Playtime 6 ✨ || #edit #poppyplaytime #prototype #fyp">
+            <div class="video-content">
+              <div class="video-title">Prototype Meets His Creator (Eliot) 💀🔥 || Poppy Playtime 6 ✨ || #edit #poppyplaytime #prototype #fyp</div>
+              <div class="video-meta">
+                <span>FAME YT</span>
+                <span>·</span>
+                <span>2026/3/11</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 994,987 播放</div>
+                <div class="video-stat">👍 0 点赞</div>
+                <div class="video-stat">💬 285 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">Ignition</span>
+                <a href="https://www.youtube.com/watch?v=U4h5Dw6iXps" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="tutorial" data-platform="Ignition">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/Shky0ABLs5M/default.jpg" alt="$200/Spin Double Diamond Deluxe MAX PAY OUT:$160,000 Here&#39;s what happened">
+            <div class="video-content">
+              <div class="video-title">$200/Spin Double Diamond Deluxe MAX PAY OUT:$160,000 Here&#39;s what happened</div>
+              <div class="video-meta">
+                <span>D Lucky Experience in Las Vegas</span>
+                <span>·</span>
+                <span>2026/3/10</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 215,836 播放</div>
+                <div class="video-stat">👍 4,501 点赞</div>
+                <div class="video-stat">💬 50 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📚 教程/策略</span>
+                <span class="platform-tag">Ignition</span>
+                <a href="https://www.youtube.com/watch?v=Shky0ABLs5M" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="PokerStars">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/kGBHh2PRwYM/default.jpg" alt="Aces Full Under Pressure #poker">
+            <div class="video-content">
+              <div class="video-title">Aces Full Under Pressure #poker</div>
+              <div class="video-meta">
+                <span>PokerFansHome</span>
+                <span>·</span>
+                <span>2026/3/15</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 143,748 播放</div>
+                <div class="video-stat">👍 2,212 点赞</div>
+                <div class="video-stat">💬 61 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">PokerStars</span>
+                <a href="https://www.youtube.com/watch?v=kGBHh2PRwYM" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="888poker">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/Odjt6x2UZNk/default.jpg" alt="What Do You WANT To Play?">
+            <div class="video-content">
+              <div class="video-title">What Do You WANT To Play?</div>
+              <div class="video-meta">
+                <span>888poker</span>
+                <span>·</span>
+                <span>2026/3/11</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 142,920 播放</div>
+                <div class="video-stat">👍 104 点赞</div>
+                <div class="video-stat">💬 1 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">888poker</span>
+                <a href="https://www.youtube.com/watch?v=Odjt6x2UZNk" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="PokerStars">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/FiJF3UyGYXE/default.jpg" alt="SWEAT WITH GRONK #BigGameOnTour">
+            <div class="video-content">
+              <div class="video-title">SWEAT WITH GRONK #BigGameOnTour</div>
+              <div class="video-meta">
+                <span>PokerStars</span>
+                <span>·</span>
+                <span>2026/3/12</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 102,765 播放</div>
+                <div class="video-stat">👍 1,362 点赞</div>
+                <div class="video-stat">💬 21 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">PokerStars</span>
+                <a href="https://www.youtube.com/watch?v=FiJF3UyGYXE" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="GGPoker">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/s3mxUZ5B1jM/default.jpg" alt="$5K NLH Mystery Bounty – Event #3, Day 2 | Triton ONE JEJU 2026">
+            <div class="video-content">
+              <div class="video-title">$5K NLH Mystery Bounty – Event #3, Day 2 | Triton ONE JEJU 2026</div>
+              <div class="video-meta">
+                <span>Triton Poker</span>
+                <span>·</span>
+                <span>2026/3/10</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 102,191 播放</div>
+                <div class="video-stat">👍 674 点赞</div>
+                <div class="video-stat">💬 4 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">GGPoker</span>
+                <a href="https://www.youtube.com/watch?v=s3mxUZ5B1jM" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="888poker">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/URaBRpKXimg/default.jpg" alt="Are Poker Players Actually Good At Math? (We Tested Them)">
+            <div class="video-content">
+              <div class="video-title">Are Poker Players Actually Good At Math? (We Tested Them)</div>
+              <div class="video-meta">
+                <span>888poker</span>
+                <span>·</span>
+                <span>2026/3/11</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 60,903 播放</div>
+                <div class="video-stat">👍 5 点赞</div>
+                <div class="video-stat">💬 9 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">888poker</span>
+                <a href="https://www.youtube.com/watch?v=URaBRpKXimg" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="tournament" data-platform="GGPoker">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/TD4so9tIBXc/default.jpg" alt="KMART DAY 2 WSOP MONSTER STACK - $300,000 UP TOP">
+            <div class="video-content">
+              <div class="video-title">KMART DAY 2 WSOP MONSTER STACK - $300,000 UP TOP</div>
+              <div class="video-meta">
+                <span>KmartPoker</span>
+                <span>·</span>
+                <span>2026/3/10</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 35,732 播放</div>
+                <div class="video-stat">👍 1,241 点赞</div>
+                <div class="video-stat">💬 18 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">🏆 锦标赛</span>
+                <span class="platform-tag">GGPoker</span>
+                <a href="https://www.youtube.com/watch?v=TD4so9tIBXc" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="PokerStars">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/xBfLXjnaYJY/default.jpg" alt="Phil Hellmuth Gets TILTED | Big Game On Tour">
+            <div class="video-content">
+              <div class="video-title">Phil Hellmuth Gets TILTED | Big Game On Tour</div>
+              <div class="video-meta">
+                <span>PokerStars</span>
+                <span>·</span>
+                <span>2026/3/16</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 31,257 播放</div>
+                <div class="video-stat">👍 669 点赞</div>
+                <div class="video-stat">💬 98 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">PokerStars</span>
+                <a href="https://www.youtube.com/watch?v=xBfLXjnaYJY" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="Ignition">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/kCVKjFcso7M/default.jpg" alt="Funny clips #shorts #funny #comedy #trending #viral #youtubeshorts 😱🤣">
+            <div class="video-content">
+              <div class="video-title">Funny clips #shorts #funny #comedy #trending #viral #youtubeshorts 😱🤣</div>
+              <div class="video-meta">
+                <span>Inspire & Ignite-sushil</span>
+                <span>·</span>
+                <span>2026/3/9</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 28,658 播放</div>
+                <div class="video-stat">👍 442 点赞</div>
+                <div class="video-stat">💬 0 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">Ignition</span>
+                <a href="https://www.youtube.com/watch?v=kCVKjFcso7M" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="PokerStars">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/Ya6iWTa3Vdo/default.jpg" alt="WE HAVE A WINNER 👑 #EPT #Poker">
+            <div class="video-content">
+              <div class="video-title">WE HAVE A WINNER 👑 #EPT #Poker</div>
+              <div class="video-meta">
+                <span>PokerStars</span>
+                <span>·</span>
+                <span>2026/3/10</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 25,343 播放</div>
+                <div class="video-stat">👍 621 点赞</div>
+                <div class="video-stat">💬 8 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">PokerStars</span>
+                <a href="https://www.youtube.com/watch?v=Ya6iWTa3Vdo" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="PokerStars">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/Po273v6Of90/default.jpg" alt="Gronk Family sweat #BigGameOnTour">
+            <div class="video-content">
+              <div class="video-title">Gronk Family sweat #BigGameOnTour</div>
+              <div class="video-meta">
+                <span>PokerStars</span>
+                <span>·</span>
+                <span>2026/3/14</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 19,124 播放</div>
+                <div class="video-stat">👍 309 点赞</div>
+                <div class="video-stat">💬 4 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">PokerStars</span>
+                <a href="https://www.youtube.com/watch?v=Po273v6Of90" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="tournament" data-platform="GGPoker">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/dru6bWB7Sj0/default.jpg" alt="Super High Roller Poker FINAL TABLE with Mathias Joelsson">
+            <div class="video-content">
+              <div class="video-title">Super High Roller Poker FINAL TABLE with Mathias Joelsson</div>
+              <div class="video-meta">
+                <span>GGPoker</span>
+                <span>·</span>
+                <span>2026/3/11</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 17,255 播放</div>
+                <div class="video-stat">👍 480 点赞</div>
+                <div class="video-stat">💬 7 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">🏆 锦标赛</span>
+                <span class="platform-tag">GGPoker</span>
+                <a href="https://www.youtube.com/watch?v=dru6bWB7Sj0" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="PokerStars">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/33yDGUUlRwk/default.jpg" alt="The Most PAINFUL Moments in Poker History">
+            <div class="video-content">
+              <div class="video-title">The Most PAINFUL Moments in Poker History</div>
+              <div class="video-meta">
+                <span>PokerGoneWild</span>
+                <span>·</span>
+                <span>2026/3/14</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 17,114 播放</div>
+                <div class="video-stat">👍 169 点赞</div>
+                <div class="video-stat">💬 5 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">PokerStars</span>
+                <a href="https://www.youtube.com/watch?v=33yDGUUlRwk" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="tournament" data-platform="ACR">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/e9tHaMysrRA/default.jpg" alt="Did I Get ANGLE SHOT at the Wynn Millions?">
+            <div class="video-content">
+              <div class="video-title">Did I Get ANGLE SHOT at the Wynn Millions?</div>
+              <div class="video-meta">
+                <span>Jeff Boski</span>
+                <span>·</span>
+                <span>2026/3/14</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 16,744 播放</div>
+                <div class="video-stat">👍 1,201 点赞</div>
+                <div class="video-stat">💬 273 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">🏆 锦标赛</span>
+                <span class="platform-tag">ACR</span>
+                <a href="https://www.youtube.com/watch?v=e9tHaMysrRA" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="PokerStars">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/BkpLLIHMAm4/default_live.jpg" alt="💵 KMART CHIPLEAD FINAL 14 - $1k GGMASTERS - $135k UP TOP">
+            <div class="video-content">
+              <div class="video-title">💵 KMART CHIPLEAD FINAL 14 - $1k GGMASTERS - $135k UP TOP</div>
+              <div class="video-meta">
+                <span>KmartPoker</span>
+                <span>·</span>
+                <span>2026/3/16</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 15,405 播放</div>
+                <div class="video-stat">👍 343 点赞</div>
+                <div class="video-stat">💬 0 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">PokerStars</span>
+                <a href="https://www.youtube.com/watch?v=BkpLLIHMAm4" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="PokerStars">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/kvZGtyxm5Cg/default.jpg" alt="🏆 DÍA FINAL - CEP BARCELONA 2026 🏆 Cartas Vistas 👀 ♠️ PokerStars en español">
+            <div class="video-content">
+              <div class="video-title">🏆 DÍA FINAL - CEP BARCELONA 2026 🏆 Cartas Vistas 👀 ♠️ PokerStars en español</div>
+              <div class="video-meta">
+                <span>PokerStars en Español</span>
+                <span>·</span>
+                <span>2026/3/16</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 14,121 播放</div>
+                <div class="video-stat">👍 309 点赞</div>
+                <div class="video-stat">💬 0 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">PokerStars</span>
+                <a href="https://www.youtube.com/watch?v=kvZGtyxm5Cg" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="Ignition">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/6SoHFo_GepA/default.jpg" alt="[一口氣看完] 重回大雪封山的極��草原！我曾親手葬送家業，重生後我手握老槍，在漫天風雪中殺出一條血路，守護我的女人與土地！ |  草原風雪 | 重生逆襲 | 硬核生存">
+            <div class="video-content">
+              <div class="video-title">[一口氣看完] 重回大雪封山的極��草原！我曾親手葬送家業，重生後我手握老槍，在漫天風雪中殺出一條血路，守護我的女人與土地！ |  草原風雪 | 重生逆襲 | 硬核生存</div>
+              <div class="video-meta">
+                <span>漫趣耕耘社</span>
+                <span>·</span>
+                <span>2026/3/10</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 12,726 播放</div>
+                <div class="video-stat">👍 192 点赞</div>
+                <div class="video-stat">💬 10 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">Ignition</span>
+                <a href="https://www.youtube.com/watch?v=6SoHFo_GepA" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="tournament" data-platform="GGPoker">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/B6JvnL3gZ68/default.jpg" alt="FT IN THE $1,050 WMW  🔥SCOOP champion 2026🏆">
+            <div class="video-content">
+              <div class="video-title">FT IN THE $1,050 WMW  🔥SCOOP champion 2026🏆</div>
+              <div class="video-meta">
+                <span>DanielPetersenPoker</span>
+                <span>·</span>
+                <span>2026/3/12</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 11,884 播放</div>
+                <div class="video-stat">👍 154 点赞</div>
+                <div class="video-stat">💬 2 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">🏆 锦标赛</span>
+                <span class="platform-tag">GGPoker</span>
+                <a href="https://www.youtube.com/watch?v=B6JvnL3gZ68" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="Ignition">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/4HYPmp-DMtY/default.jpg" alt="She Gives Up Being a Villain, Then Receives 10 Billion and Wants to Open a Small Shop">
+            <div class="video-content">
+              <div class="video-title">She Gives Up Being a Villain, Then Receives 10 Billion and Wants to Open a Small Shop</div>
+              <div class="video-meta">
+                <span>Romance Manhwa Recap</span>
+                <span>·</span>
+                <span>2026/3/13</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 10,997 播放</div>
+                <div class="video-stat">👍 295 点赞</div>
+                <div class="video-stat">💬 14 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">Ignition</span>
+                <a href="https://www.youtube.com/watch?v=4HYPmp-DMtY" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="ACR">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/UoDEtmINDCA/default.jpg" alt="Poker Pro Uses Super Power To Try &amp; Win">
+            <div class="video-content">
+              <div class="video-title">Poker Pro Uses Super Power To Try &amp; Win</div>
+              <div class="video-meta">
+                <span>ACR Poker</span>
+                <span>·</span>
+                <span>2026/3/12</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 9,625 播放</div>
+                <div class="video-stat">👍 125 点赞</div>
+                <div class="video-stat">💬 9 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">ACR</span>
+                <a href="https://www.youtube.com/watch?v=UoDEtmINDCA" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="tutorial" data-platform="GGPoker">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/pUNhruPYyHM/default.jpg" alt="POKER KARMA STRIKES 😳">
+            <div class="video-content">
+              <div class="video-title">POKER KARMA STRIKES 😳</div>
+              <div class="video-meta">
+                <span>All In Insights</span>
+                <span>·</span>
+                <span>2026/3/15</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 8,843 播放</div>
+                <div class="video-stat">👍 144 点赞</div>
+                <div class="video-stat">💬 0 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📚 教程/策略</span>
+                <span class="platform-tag">GGPoker</span>
+                <a href="https://www.youtube.com/watch?v=pUNhruPYyHM" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="stream" data-platform="PokerStars">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/Kt0P33tsvR0/default.jpg" alt="I AM THE GREATEST POKER PLAYER ALIVE!">
+            <div class="video-content">
+              <div class="video-title">I AM THE GREATEST POKER PLAYER ALIVE!</div>
+              <div class="video-meta">
+                <span>Sethy Poker</span>
+                <span>·</span>
+                <span>2026/3/15</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 6,248 播放</div>
+                <div class="video-stat">👍 289 点赞</div>
+                <div class="video-stat">💬 3 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">🎮 直播/Vlog</span>
+                <span class="platform-tag">PokerStars</span>
+                <a href="https://www.youtube.com/watch?v=Kt0P33tsvR0" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="tournament" data-platform="GGPoker">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/mc697sYr-6Q/default.jpg" alt="How To Win a Mystery Bounty Poker Tournament Final Table">
+            <div class="video-content">
+              <div class="video-title">How To Win a Mystery Bounty Poker Tournament Final Table</div>
+              <div class="video-meta">
+                <span>Egption Poker</span>
+                <span>·</span>
+                <span>2026/3/15</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 4,689 播放</div>
+                <div class="video-stat">👍 184 点赞</div>
+                <div class="video-stat">💬 31 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">🏆 锦标赛</span>
+                <span class="platform-tag">GGPoker</span>
+                <a href="https://www.youtube.com/watch?v=mc697sYr-6Q" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="tournament" data-platform="ACR">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/AYmsxa9MFzo/default.jpg" alt="SERIES MARS DAY 9/25 | LUNDI à 3000€ de Buy-in! GG WSOPSC / PSCOM SCOOP / Winamax KOB / ACR OSSXL">
+            <div class="video-content">
+              <div class="video-title">SERIES MARS DAY 9/25 | LUNDI à 3000€ de Buy-in! GG WSOPSC / PSCOM SCOOP / Winamax KOB / ACR OSSXL</div>
+              <div class="video-meta">
+                <span>PulsarPoker</span>
+                <span>·</span>
+                <span>2026/3/10</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 4,473 播放</div>
+                <div class="video-stat">👍 93 点赞</div>
+                <div class="video-stat">💬 1 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">🏆 锦标赛</span>
+                <span class="platform-tag">ACR</span>
+                <a href="https://www.youtube.com/watch?v=AYmsxa9MFzo" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="tournament" data-platform="ACR">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/KjHJdG6dB3Q/default.jpg" alt="SERIES MARS DAY 15/25 | DIMANCHE à 4000€ de Buy-in! GG WSOPSC / PSCOM SCOOP / ACR OSSXL / WMX FUNDAY">
+            <div class="video-content">
+              <div class="video-title">SERIES MARS DAY 15/25 | DIMANCHE à 4000€ de Buy-in! GG WSOPSC / PSCOM SCOOP / ACR OSSXL / WMX FUNDAY</div>
+              <div class="video-meta">
+                <span>PulsarPoker</span>
+                <span>·</span>
+                <span>2026/3/16</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 3,914 播放</div>
+                <div class="video-stat">👍 93 点赞</div>
+                <div class="video-stat">💬 0 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">🏆 锦标赛</span>
+                <span class="platform-tag">ACR</span>
+                <a href="https://www.youtube.com/watch?v=KjHJdG6dB3Q" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="tournament" data-platform="ACR">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/amKLIDtcHj4/default.jpg" alt="SERIES MARS DAY 14/25 | SAMEDI à 4000€ de Buy-in! GG WSOPSC / PSCOM SCOOP / ACR OSSXL / Winamax">
+            <div class="video-content">
+              <div class="video-title">SERIES MARS DAY 14/25 | SAMEDI à 4000€ de Buy-in! GG WSOPSC / PSCOM SCOOP / ACR OSSXL / Winamax</div>
+              <div class="video-meta">
+                <span>PulsarPoker</span>
+                <span>·</span>
+                <span>2026/3/15</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 3,902 播放</div>
+                <div class="video-stat">👍 101 点赞</div>
+                <div class="video-stat">💬 0 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">🏆 锦标赛</span>
+                <span class="platform-tag">ACR</span>
+                <a href="https://www.youtube.com/watch?v=amKLIDtcHj4" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="Ignition">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/UiF9_v3192c/default.jpg" alt="How Arsenal Put One Hand On The TITLE | Arsenal 2-0 Everton Tactical Analysis">
+            <div class="video-content">
+              <div class="video-title">How Arsenal Put One Hand On The TITLE | Arsenal 2-0 Everton Tactical Analysis</div>
+              <div class="video-meta">
+                <span>Harvey Gration</span>
+                <span>·</span>
+                <span>2026/3/16</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 3,594 播放</div>
+                <div class="video-stat">👍 312 点赞</div>
+                <div class="video-stat">💬 34 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">Ignition</span>
+                <a href="https://www.youtube.com/watch?v=UiF9_v3192c" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="tournament" data-platform="ACR">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/Qdh-hsxa8dY/default.jpg" alt="SERIES MARS DAY 12/25 | JEUDI à 2000€ de Buy-in! GG WSOPSC / PSCOM SCOOP / ACR OSSXL / Winamax">
+            <div class="video-content">
+              <div class="video-title">SERIES MARS DAY 12/25 | JEUDI à 2000€ de Buy-in! GG WSOPSC / PSCOM SCOOP / ACR OSSXL / Winamax</div>
+              <div class="video-meta">
+                <span>PulsarPoker</span>
+                <span>·</span>
+                <span>2026/3/13</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 3,408 播放</div>
+                <div class="video-stat">👍 104 点赞</div>
+                <div class="video-stat">💬 2 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">🏆 锦标赛</span>
+                <span class="platform-tag">ACR</span>
+                <a href="https://www.youtube.com/watch?v=Qdh-hsxa8dY" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="Ignition">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/82adpIbTuHY/default.jpg" alt="Suited A9, let&#39;s see how it goes...">
+            <div class="video-content">
+              <div class="video-title">Suited A9, let&#39;s see how it goes...</div>
+              <div class="video-meta">
+                <span>Ignition</span>
+                <span>·</span>
+                <span>2026/3/10</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 3,038 播放</div>
+                <div class="video-stat">👍 66 点赞</div>
+                <div class="video-stat">💬 1 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">Ignition</span>
+                <a href="https://www.youtube.com/watch?v=82adpIbTuHY" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="Ignition">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/8qUb2huByqw/default.jpg" alt="In a World Where Wives Are Given for Free, I Claimed 30 Wives on My First Day!">
+            <div class="video-content">
+              <div class="video-title">In a World Where Wives Are Given for Free, I Claimed 30 Wives on My First Day!</div>
+              <div class="video-meta">
+                <span>Revel Manga Chronicles</span>
+                <span>·</span>
+                <span>2026/3/14</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 2,763 播放</div>
+                <div class="video-stat">👍 81 点赞</div>
+                <div class="video-stat">💬 1 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">Ignition</span>
+                <a href="https://www.youtube.com/watch?v=8qUb2huByqw" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="Ignition">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/QPUN3hWCmpI/default.jpg" alt="🔥Boy Teleports His Entire Village To A Primitive World, But Only His System Can Provide Endless Food">
+            <div class="video-content">
+              <div class="video-title">🔥Boy Teleports His Entire Village To A Primitive World, But Only His System Can Provide Endless Food</div>
+              <div class="video-meta">
+                <span>Bella's Comic Chronicles</span>
+                <span>·</span>
+                <span>2026/3/12</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 2,676 播放</div>
+                <div class="video-stat">👍 57 点赞</div>
+                <div class="video-stat">💬 2 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">Ignition</span>
+                <a href="https://www.youtube.com/watch?v=QPUN3hWCmpI" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="888poker">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/HOSK6S5HkL8/default.jpg" alt="BACK TO BACK COOLERS vs the SAME OPPONENT?! | Top 10 Hands Ep. 226">
+            <div class="video-content">
+              <div class="video-title">BACK TO BACK COOLERS vs the SAME OPPONENT?! | Top 10 Hands Ep. 226</div>
+              <div class="video-meta">
+                <span>Nick Eastwood</span>
+                <span>·</span>
+                <span>2026/3/16</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 2,354 播放</div>
+                <div class="video-stat">👍 92 点赞</div>
+                <div class="video-stat">💬 28 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">888poker</span>
+                <a href="https://www.youtube.com/watch?v=HOSK6S5HkL8" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="ACR">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/2hYr6i_Vj5g/default.jpg" alt="Do You Play This HAND The Same Way?">
+            <div class="video-content">
+              <div class="video-title">Do You Play This HAND The Same Way?</div>
+              <div class="video-meta">
+                <span>ACR Poker</span>
+                <span>·</span>
+                <span>2026/3/15</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 2,251 播放</div>
+                <div class="video-stat">👍 32 点赞</div>
+                <div class="video-stat">💬 2 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">ACR</span>
+                <a href="https://www.youtube.com/watch?v=2hYr6i_Vj5g" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="GGPoker">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/JObdlXMBbMM/default.jpg" alt="NL200-NL1000 GGPoker - Chill">
+            <div class="video-content">
+              <div class="video-title">NL200-NL1000 GGPoker - Chill</div>
+              <div class="video-meta">
+                <span>Yolan Cohen Poker</span>
+                <span>·</span>
+                <span>2026/3/9</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 2,202 播放</div>
+                <div class="video-stat">👍 58 点赞</div>
+                <div class="video-stat">💬 6 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">GGPoker</span>
+                <a href="https://www.youtube.com/watch?v=JObdlXMBbMM" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="Ignition">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/BkUawF-uLpU/default.jpg" alt="美伊以誰正面臨強弩之末？">
+            <div class="video-content">
+              <div class="video-title">美伊以誰正面臨強弩之末？</div>
+              <div class="video-meta">
+                <span>乾坤門五術</span>
+                <span>·</span>
+                <span>2026/3/15</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 2,175 播放</div>
+                <div class="video-stat">👍 240 点赞</div>
+                <div class="video-stat">💬 6 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">Ignition</span>
+                <a href="https://www.youtube.com/watch?v=BkUawF-uLpU" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="review" data-platform="Ignition">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/FKHeq6L_NQk/default.jpg" alt="🔥Lord of Ten Thousand Clans: A Man Starts with a Max-Level Empire, Becoming the Sole World Lord">
+            <div class="video-content">
+              <div class="video-title">🔥Lord of Ten Thousand Clans: A Man Starts with a Max-Level Empire, Becoming the Sole World Lord</div>
+              <div class="video-meta">
+                <span>Blue Whale Comics Review</span>
+                <span>·</span>
+                <span>2026/3/14</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 2,153 播放</div>
+                <div class="video-stat">👍 58 点赞</div>
+                <div class="video-stat">💬 3 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📝 评测</span>
+                <span class="platform-tag">Ignition</span>
+                <a href="https://www.youtube.com/watch?v=FKHeq6L_NQk" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="Ignition">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/WK1tWzFhDGM/default.jpg" alt="🔥He Becomes King of a Weak Nation, But the System Says Only Living Among Beauties Makes It Stronger！">
+            <div class="video-content">
+              <div class="video-title">🔥He Becomes King of a Weak Nation, But the System Says Only Living Among Beauties Makes It Stronger！</div>
+              <div class="video-meta">
+                <span>Bella's Comic Chronicles</span>
+                <span>·</span>
+                <span>2026/3/14</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 2,004 播放</div>
+                <div class="video-stat">👍 63 点赞</div>
+                <div class="video-stat">💬 4 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">Ignition</span>
+                <a href="https://www.youtube.com/watch?v=WK1tWzFhDGM" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="stream" data-platform="PokerStars">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/B2si4W2oxOk/default.jpg" alt="PokerStars Live at the Hippodrome - Weekly £5/£10 Cash Game">
+            <div class="video-content">
+              <div class="video-title">PokerStars Live at the Hippodrome - Weekly £5/£10 Cash Game</div>
+              <div class="video-meta">
+                <span>PokerStars Live @ The Hippodrome</span>
+                <span>·</span>
+                <span>2026/3/14</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 1,843 播放</div>
+                <div class="video-stat">👍 14 点赞</div>
+                <div class="video-stat">💬 3 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">🎮 直播/Vlog</span>
+                <span class="platform-tag">PokerStars</span>
+                <a href="https://www.youtube.com/watch?v=B2si4W2oxOk" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="stream" data-platform="ACR">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/zTCuxmUWe_E/default.jpg" alt="Battling on $5/5/10 Livestream!! -- Paying Off My Student Loans Playing Poker (Ep. 13)">
+            <div class="video-content">
+              <div class="video-title">Battling on $5/5/10 Livestream!! -- Paying Off My Student Loans Playing Poker (Ep. 13)</div>
+              <div class="video-meta">
+                <span>JQ Poker </span>
+                <span>·</span>
+                <span>2026/3/12</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 1,725 播放</div>
+                <div class="video-stat">👍 140 点赞</div>
+                <div class="video-stat">💬 13 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">🎮 直播/Vlog</span>
+                <span class="platform-tag">ACR</span>
+                <a href="https://www.youtube.com/watch?v=zTCuxmUWe_E" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="stream" data-platform="888poker">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/u5a-Vjg4nq0/default.jpg" alt="DAY 8 OF THE CHALLENGE AND 100% RAKEBACK ON COINPOKER THIS MONTH! !coin">
+            <div class="video-content">
+              <div class="video-title">DAY 8 OF THE CHALLENGE AND 100% RAKEBACK ON COINPOKER THIS MONTH! !coin</div>
+              <div class="video-meta">
+                <span>Wistern</span>
+                <span>·</span>
+                <span>2026/3/15</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 1,615 播放</div>
+                <div class="video-stat">👍 26 点赞</div>
+                <div class="video-stat">💬 0 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">🎮 直播/Vlog</span>
+                <span class="platform-tag">888poker</span>
+                <a href="https://www.youtube.com/watch?v=u5a-Vjg4nq0" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="stream" data-platform="CoinPoker">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/u5a-Vjg4nq0/default.jpg" alt="DAY 8 OF THE CHALLENGE AND 100% RAKEBACK ON COINPOKER THIS MONTH! !coin">
+            <div class="video-content">
+              <div class="video-title">DAY 8 OF THE CHALLENGE AND 100% RAKEBACK ON COINPOKER THIS MONTH! !coin</div>
+              <div class="video-meta">
+                <span>Wistern</span>
+                <span>·</span>
+                <span>2026/3/15</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 1,615 播放</div>
+                <div class="video-stat">👍 26 点赞</div>
+                <div class="video-stat">💬 0 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">🎮 直播/Vlog</span>
+                <span class="platform-tag">CoinPoker</span>
+                <a href="https://www.youtube.com/watch?v=u5a-Vjg4nq0" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="CoinPoker">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/AMoTqKgoNVI/default.jpg" alt="Risking $80k for a $240k pot, VAAAMOS! #poker #pokerlife">
+            <div class="video-content">
+              <div class="video-title">Risking $80k for a $240k pot, VAAAMOS! #poker #pokerlife</div>
+              <div class="video-meta">
+                <span>YoH ViraL Poker</span>
+                <span>·</span>
+                <span>2026/3/15</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 1,456 播放</div>
+                <div class="video-stat">👍 20 点赞</div>
+                <div class="video-stat">💬 0 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">CoinPoker</span>
+                <a href="https://www.youtube.com/watch?v=AMoTqKgoNVI" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="ACR">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/vd9Gw2pKLaE/default.jpg" alt="Cut lost 😞 fight other day ❤️♣️♦️♠️😬😬😬 #poker #americascardroom">
+            <div class="video-content">
+              <div class="video-title">Cut lost 😞 fight other day ❤️♣️♦️♠️😬😬😬 #poker #americascardroom</div>
+              <div class="video-meta">
+                <span>POKER cho nguoi bat dau( poker for dummies)</span>
+                <span>·</span>
+                <span>2026/3/12</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 1,308 播放</div>
+                <div class="video-stat">👍 8 点赞</div>
+                <div class="video-stat">💬 0 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">ACR</span>
+                <a href="https://www.youtube.com/watch?v=vd9Gw2pKLaE" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="ACR">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/Z0p_W7VQMoc/default.jpg" alt="Poker Decision Worth More Than His Net Worth">
+            <div class="video-content">
+              <div class="video-title">Poker Decision Worth More Than His Net Worth</div>
+              <div class="video-meta">
+                <span>ACR Poker</span>
+                <span>·</span>
+                <span>2026/3/12</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 1,178 播放</div>
+                <div class="video-stat">👍 25 点赞</div>
+                <div class="video-stat">💬 0 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">ACR</span>
+                <a href="https://www.youtube.com/watch?v=Z0p_W7VQMoc" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="888poker">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/HfF11XU_pk4/default.jpg" alt="POV: How Would You Play POCKET KINGS Here??">
+            <div class="video-content">
+              <div class="video-title">POV: How Would You Play POCKET KINGS Here??</div>
+              <div class="video-meta">
+                <span>888poker</span>
+                <span>·</span>
+                <span>2026/3/13</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 1,139 播放</div>
+                <div class="video-stat">👍 8 点赞</div>
+                <div class="video-stat">💬 1 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">888poker</span>
+                <a href="https://www.youtube.com/watch?v=HfF11XU_pk4" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="ACR">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/cRicpV9SZTE/default.jpg" alt="SERIES MARS DAY 10/25 | DAY 2 de l&#39;event 50 des SCOOP à 109$ | 18K$ à la win">
+            <div class="video-content">
+              <div class="video-title">SERIES MARS DAY 10/25 | DAY 2 de l&#39;event 50 des SCOOP à 109$ | 18K$ à la win</div>
+              <div class="video-meta">
+                <span>PulsarPoker</span>
+                <span>·</span>
+                <span>2026/3/11</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 1,039 播放</div>
+                <div class="video-stat">👍 22 点赞</div>
+                <div class="video-stat">💬 0 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">ACR</span>
+                <a href="https://www.youtube.com/watch?v=cRicpV9SZTE" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="review" data-platform="ACR">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/YJEE77Wmu3Q/default.jpg" alt="Live Reviews 2026 EP5 - DLTDP Davidi Kitai">
+            <div class="video-content">
+              <div class="video-title">Live Reviews 2026 EP5 - DLTDP Davidi Kitai</div>
+              <div class="video-meta">
+                <span>PulsarPoker</span>
+                <span>·</span>
+                <span>2026/3/11</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 985 播放</div>
+                <div class="video-stat">👍 25 点赞</div>
+                <div class="video-stat">💬 0 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📝 评测</span>
+                <span class="platform-tag">ACR</span>
+                <a href="https://www.youtube.com/watch?v=YJEE77Wmu3Q" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="888poker">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/vcFlhHaApa4/default.jpg" alt="Trapping with POCKET JACKS??">
+            <div class="video-content">
+              <div class="video-title">Trapping with POCKET JACKS??</div>
+              <div class="video-meta">
+                <span>888poker</span>
+                <span>·</span>
+                <span>2026/3/14</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 953 播放</div>
+                <div class="video-stat">👍 6 点赞</div>
+                <div class="video-stat">💬 0 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">888poker</span>
+                <a href="https://www.youtube.com/watch?v=vcFlhHaApa4" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="Ignition">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/FC6otUI-7tk/default.jpg" alt="Why Chasing Women NEVER Works! - Dan Bilzerian">
+            <div class="video-content">
+              <div class="video-title">Why Chasing Women NEVER Works! - Dan Bilzerian</div>
+              <div class="video-meta">
+                <span>London Real</span>
+                <span>·</span>
+                <span>2026/3/13</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 774 播放</div>
+                <div class="video-stat">👍 20 点赞</div>
+                <div class="video-stat">💬 6 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">Ignition</span>
+                <a href="https://www.youtube.com/watch?v=FC6otUI-7tk" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="888poker">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/ufe-tzmfV0g/default.jpg" alt="How Would You Play This River With POCKET QUEENS?">
+            <div class="video-content">
+              <div class="video-title">How Would You Play This River With POCKET QUEENS?</div>
+              <div class="video-meta">
+                <span>888poker</span>
+                <span>·</span>
+                <span>2026/3/16</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 563 播放</div>
+                <div class="video-stat">👍 8 点赞</div>
+                <div class="video-stat">💬 0 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">888poker</span>
+                <a href="https://www.youtube.com/watch?v=ufe-tzmfV0g" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="ACR">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/XJWwJAMmWK0/default.jpg" alt="I Lost $1,000 Playing Poker in One Hour (Tilt Got Me)">
+            <div class="video-content">
+              <div class="video-title">I Lost $1,000 Playing Poker in One Hour (Tilt Got Me)</div>
+              <div class="video-meta">
+                <span>cblez</span>
+                <span>·</span>
+                <span>2026/3/11</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 521 播放</div>
+                <div class="video-stat">👍 7 点赞</div>
+                <div class="video-stat">💬 1 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">ACR</span>
+                <a href="https://www.youtube.com/watch?v=XJWwJAMmWK0" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="888poker">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/2SyNImCCwFs/default.jpg" alt="Do You Know What Your Odds of Flopping a Set Are??">
+            <div class="video-content">
+              <div class="video-title">Do You Know What Your Odds of Flopping a Set Are??</div>
+              <div class="video-meta">
+                <span>888poker</span>
+                <span>·</span>
+                <span>2026/3/12</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 510 播放</div>
+                <div class="video-stat">👍 5 点赞</div>
+                <div class="video-stat">💬 0 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">888poker</span>
+                <a href="https://www.youtube.com/watch?v=2SyNImCCwFs" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="888poker">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/eOJ7QoAmpfE/default.jpg" alt="What&#39;s AA&#39;s Equity vs. A Random Hand?">
+            <div class="video-content">
+              <div class="video-title">What&#39;s AA&#39;s Equity vs. A Random Hand?</div>
+              <div class="video-meta">
+                <span>888poker</span>
+                <span>·</span>
+                <span>2026/3/15</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 504 播放</div>
+                <div class="video-stat">👍 2 点赞</div>
+                <div class="video-stat">💬 0 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">888poker</span>
+                <a href="https://www.youtube.com/watch?v=eOJ7QoAmpfE" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="tournament" data-platform="888poker">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/wkz1p83O4N4/default.jpg" alt="100K Rakeless Mystery Bounty Main Event Final Table |  !contest !password !freeroll">
+            <div class="video-content">
+              <div class="video-title">100K Rakeless Mystery Bounty Main Event Final Table |  !contest !password !freeroll</div>
+              <div class="video-meta">
+                <span>888poker</span>
+                <span>·</span>
+                <span>2026/3/10</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 492 播放</div>
+                <div class="video-stat">👍 6 点赞</div>
+                <div class="video-stat">💬 0 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">🏆 锦标赛</span>
+                <span class="platform-tag">888poker</span>
+                <a href="https://www.youtube.com/watch?v=wkz1p83O4N4" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="Ignition">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/-ECpnjIUh-g/default.jpg" alt="The Most CONTROVERSIAL Players In Poker History">
+            <div class="video-content">
+              <div class="video-title">The Most CONTROVERSIAL Players In Poker History</div>
+              <div class="video-meta">
+                <span>Poker Pot</span>
+                <span>·</span>
+                <span>2026/3/13</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 488 播放</div>
+                <div class="video-stat">👍 8 点赞</div>
+                <div class="video-stat">💬 6 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">Ignition</span>
+                <a href="https://www.youtube.com/watch?v=-ECpnjIUh-g" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="stream" data-platform="ACR">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/r5AUjudRnDw/default.jpg" alt="Poker Pro Explains The Swings of Grinding Low Stakes to High Stakes! (VLOG)">
+            <div class="video-content">
+              <div class="video-title">Poker Pro Explains The Swings of Grinding Low Stakes to High Stakes! (VLOG)</div>
+              <div class="video-meta">
+                <span>Jon Pardy Poker </span>
+                <span>·</span>
+                <span>2026/3/16</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 410 播放</div>
+                <div class="video-stat">👍 53 点赞</div>
+                <div class="video-stat">💬 5 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">🎮 直播/Vlog</span>
+                <span class="platform-tag">ACR</span>
+                <a href="https://www.youtube.com/watch?v=r5AUjudRnDw" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="Ignition">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/6yuS1cYNeaU/default.jpg" alt="Dan Bilzerian Speaks Out About Hi Wildest Relationship Confession Ever">
+            <div class="video-content">
+              <div class="video-title">Dan Bilzerian Speaks Out About Hi Wildest Relationship Confession Ever</div>
+              <div class="video-meta">
+                <span>London Real</span>
+                <span>·</span>
+                <span>2026/3/14</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 354 播放</div>
+                <div class="video-stat">👍 10 点赞</div>
+                <div class="video-stat">💬 1 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">Ignition</span>
+                <a href="https://www.youtube.com/watch?v=6yuS1cYNeaU" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="stream" data-platform="CoinPoker">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/7Qld_-qJ4_s/default.jpg" alt="DAY 9 OF THE CHALLENGE AND 100% RAKEBACK ON COINPOKER THIS MONTH! !coin">
+            <div class="video-content">
+              <div class="video-title">DAY 9 OF THE CHALLENGE AND 100% RAKEBACK ON COINPOKER THIS MONTH! !coin</div>
+              <div class="video-meta">
+                <span>Wistern</span>
+                <span>·</span>
+                <span>2026/3/16</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 335 播放</div>
+                <div class="video-stat">👍 9 点赞</div>
+                <div class="video-stat">💬 0 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">🎮 直播/Vlog</span>
+                <span class="platform-tag">CoinPoker</span>
+                <a href="https://www.youtube.com/watch?v=7Qld_-qJ4_s" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="ACR">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/sDs_eQ1lWLw/default.jpg" alt="Cours ligne rouge - Dixième Épisode">
+            <div class="video-content">
+              <div class="video-title">Cours ligne rouge - Dixième Épisode</div>
+              <div class="video-meta">
+                <span>Improve My Poker</span>
+                <span>·</span>
+                <span>2026/3/10</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 241 播放</div>
+                <div class="video-stat">👍 14 点赞</div>
+                <div class="video-stat">💬 3 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">ACR</span>
+                <a href="https://www.youtube.com/watch?v=sDs_eQ1lWLw" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="stream" data-platform="Ignition">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/VUDrH7dPMzk/default.jpg" alt="🎥🔥 𝗟𝗜𝗩𝗘 𝗦𝗧𝗥𝗘𝗔𝗠 – 𝗜𝗚𝗡𝗜𝗧𝗜𝗢𝗡 𝗦𝗘𝗥𝗜𝗘𝗦 𝗛𝗜𝗚𝗛 𝗥𝗢𝗟𝗟𝗘𝗥 🔥🎥Prize Pool: $46,615">
+            <div class="video-content">
+              <div class="video-title">🎥🔥 𝗟𝗜𝗩𝗘 𝗦𝗧𝗥𝗘𝗔𝗠 – 𝗜𝗚𝗡𝗜𝗧𝗜𝗢𝗡 𝗦𝗘𝗥𝗜𝗘𝗦 𝗛𝗜𝗚𝗛 𝗥𝗢𝗟𝗟𝗘𝗥 🔥🎥Prize Pool: $46,615</div>
+              <div class="video-meta">
+                <span>Empire Poker</span>
+                <span>·</span>
+                <span>2026/3/14</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 229 播放</div>
+                <div class="video-stat">👍 0 点赞</div>
+                <div class="video-stat">💬 0 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">🎮 直播/Vlog</span>
+                <span class="platform-tag">Ignition</span>
+                <a href="https://www.youtube.com/watch?v=VUDrH7dPMzk" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="ACR">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/B5qlscIyEAQ/default.jpg" alt="High Stakes Poker on ACR---OSSXL Day 3 II !Youtube">
+            <div class="video-content">
+              <div class="video-title">High Stakes Poker on ACR---OSSXL Day 3 II !Youtube</div>
+              <div class="video-meta">
+                <span>Jon Pardy Poker </span>
+                <span>·</span>
+                <span>2026/3/9</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 221 播放</div>
+                <div class="video-stat">👍 8 点赞</div>
+                <div class="video-stat">💬 0 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">ACR</span>
+                <a href="https://www.youtube.com/watch?v=B5qlscIyEAQ" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="Ignition">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/URXooUVz65g/default.jpg" alt="⚔️🔥 𝗧𝗛𝗘 𝗚𝗟𝗔𝗗𝗜𝗔𝗧𝗢𝗥 🔥⚔️ – 𝗜𝗚𝗡𝗜𝗧𝗜𝗢𝗡 𝗦𝗘𝗥𝗜𝗘𝗦 𝗛𝗜𝗚𝗛 𝗥𝗢𝗟𝗟𝗘𝗥 🔥🎥Prize Pool: $31,100">
+            <div class="video-content">
+              <div class="video-title">⚔️🔥 𝗧𝗛𝗘 𝗚𝗟𝗔𝗗𝗜𝗔𝗧𝗢𝗥 🔥⚔️ – 𝗜𝗚𝗡𝗜𝗧𝗜𝗢𝗡 𝗦𝗘𝗥𝗜𝗘𝗦 𝗛𝗜𝗚𝗛 𝗥𝗢𝗟𝗟𝗘𝗥 🔥🎥Prize Pool: $31,100</div>
+              <div class="video-meta">
+                <span>Empire Poker</span>
+                <span>·</span>
+                <span>2026/3/15</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 187 播放</div>
+                <div class="video-stat">👍 1 点赞</div>
+                <div class="video-stat">💬 0 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">Ignition</span>
+                <a href="https://www.youtube.com/watch?v=URXooUVz65g" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="GGPoker">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/AsBbFEIjlvs/default.jpg" alt="NL50 GG Poker - O retorno.">
+            <div class="video-content">
+              <div class="video-title">NL50 GG Poker - O retorno.</div>
+              <div class="video-meta">
+                <span>Vivão Poker Cash</span>
+                <span>·</span>
+                <span>2026/3/14</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 160 播放</div>
+                <div class="video-stat">👍 23 点赞</div>
+                <div class="video-stat">💬 4 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">GGPoker</span>
+                <a href="https://www.youtube.com/watch?v=AsBbFEIjlvs" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="CoinPoker">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/bnHuTVoZ0tg/default.jpg" alt="🔥 MA 1ÈRE PAIRE D&#39;AS sur CoinPoker (meilleur site de poker en ligne ?)">
+            <div class="video-content">
+              <div class="video-title">🔥 MA 1ÈRE PAIRE D&#39;AS sur CoinPoker (meilleur site de poker en ligne ?)</div>
+              <div class="video-meta">
+                <span>CON DE MIME</span>
+                <span>·</span>
+                <span>2026/3/15</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 147 播放</div>
+                <div class="video-stat">👍 10 点赞</div>
+                <div class="video-stat">💬 0 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">CoinPoker</span>
+                <a href="https://www.youtube.com/watch?v=bnHuTVoZ0tg" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="review" data-platform="ACR">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/29TYPDK6p5c/default.jpg" alt="Best Rakeback Poker Sites: CoinPoker, GGPoker &amp; More Deals">
+            <div class="video-content">
+              <div class="video-title">Best Rakeback Poker Sites: CoinPoker, GGPoker &amp; More Deals</div>
+              <div class="video-meta">
+                <span>PokerStrategy.com</span>
+                <span>·</span>
+                <span>2026/3/11</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 95 播放</div>
+                <div class="video-stat">👍 3 点赞</div>
+                <div class="video-stat">💬 1 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📝 评测</span>
+                <span class="platform-tag">ACR</span>
+                <a href="https://www.youtube.com/watch?v=29TYPDK6p5c" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="review" data-platform="CoinPoker">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/29TYPDK6p5c/default.jpg" alt="Best Rakeback Poker Sites: CoinPoker, GGPoker &amp; More Deals">
+            <div class="video-content">
+              <div class="video-title">Best Rakeback Poker Sites: CoinPoker, GGPoker &amp; More Deals</div>
+              <div class="video-meta">
+                <span>PokerStrategy.com</span>
+                <span>·</span>
+                <span>2026/3/11</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 95 播放</div>
+                <div class="video-stat">👍 3 点赞</div>
+                <div class="video-stat">💬 1 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📝 评测</span>
+                <span class="platform-tag">CoinPoker</span>
+                <a href="https://www.youtube.com/watch?v=29TYPDK6p5c" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="Ignition">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/8mLwjsyNXjU/default.jpg" alt="Dan Bilzerian">
+            <div class="video-content">
+              <div class="video-title">Dan Bilzerian</div>
+              <div class="video-meta">
+                <span>Orhan Dönmez</span>
+                <span>·</span>
+                <span>2026/3/9</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 72 播放</div>
+                <div class="video-stat">👍 0 点赞</div>
+                <div class="video-stat">💬 0 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">Ignition</span>
+                <a href="https://www.youtube.com/watch?v=8mLwjsyNXjU" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="tutorial" data-platform="GGPoker">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/UdHi1LqEWwk/default.jpg" alt="🎥 Welcome to club ggpoker LIVE">
+            <div class="video-content">
+              <div class="video-title">🎥 Welcome to club ggpoker LIVE</div>
+              <div class="video-meta">
+                <span>Poker MetaRb</span>
+                <span>·</span>
+                <span>2026/3/16</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 61 播放</div>
+                <div class="video-stat">👍 4 点赞</div>
+                <div class="video-stat">💬 0 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📚 教程/策略</span>
+                <span class="platform-tag">GGPoker</span>
+                <a href="https://www.youtube.com/watch?v=UdHi1LqEWwk" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="news" data-platform="CoinPoker">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/mnP9epICq2w/default.jpg" alt="Best Online Poker Site in 2026? CoinPoker&#39;s New Update Stress Tested!">
+            <div class="video-content">
+              <div class="video-title">Best Online Poker Site in 2026? CoinPoker&#39;s New Update Stress Tested!</div>
+              <div class="video-meta">
+                <span>Poker Ain’t Life Productions</span>
+                <span>·</span>
+                <span>2026/3/11</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 50 播放</div>
+                <div class="video-stat">👍 10 点赞</div>
+                <div class="video-stat">💬 4 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📰 新闻</span>
+                <span class="platform-tag">CoinPoker</span>
+                <a href="https://www.youtube.com/watch?v=mnP9epICq2w" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="ACR">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/P_hfWTs9zD0/default.jpg" alt="10,000$ NLHE - MunEZ_StaRR - Poker Session #452">
+            <div class="video-content">
+              <div class="video-title">10,000$ NLHE - MunEZ_StaRR - Poker Session #452</div>
+              <div class="video-meta">
+                <span>Poker Highlights</span>
+                <span>·</span>
+                <span>2026/3/15</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 48 播放</div>
+                <div class="video-stat">👍 1 点赞</div>
+                <div class="video-stat">💬 0 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">ACR</span>
+                <a href="https://www.youtube.com/watch?v=P_hfWTs9zD0" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="Ignition">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/7OJd7MLc65M/default.jpg" alt="Connector cracked how does that happen">
+            <div class="video-content">
+              <div class="video-title">Connector cracked how does that happen</div>
+              <div class="video-meta">
+                <span>Norman Teaches Poker</span>
+                <span>·</span>
+                <span>2026/3/11</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 43 播放</div>
+                <div class="video-stat">👍 1 点赞</div>
+                <div class="video-stat">💬 0 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">Ignition</span>
+                <a href="https://www.youtube.com/watch?v=7OJd7MLc65M" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="tournament" data-platform="GGPoker">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/MOKSP9KcbFM/default.jpg" alt="Pocket Sixes Did THIS?!">
+            <div class="video-content">
+              <div class="video-title">Pocket Sixes Did THIS?!</div>
+              <div class="video-meta">
+                <span>52Outs</span>
+                <span>·</span>
+                <span>2026/3/10</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 42 播放</div>
+                <div class="video-stat">👍 2 点赞</div>
+                <div class="video-stat">💬 0 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">🏆 锦标赛</span>
+                <span class="platform-tag">GGPoker</span>
+                <a href="https://www.youtube.com/watch?v=MOKSP9KcbFM" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="review" data-platform="Ignition">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/BHeKlAbRxWA/default.jpg" alt="Ignition Withdrawals Review &amp; I Flopped a Set of 4’s!">
+            <div class="video-content">
+              <div class="video-title">Ignition Withdrawals Review &amp; I Flopped a Set of 4’s!</div>
+              <div class="video-meta">
+                <span>Pstacker </span>
+                <span>·</span>
+                <span>2026/3/13</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 36 播放</div>
+                <div class="video-stat">👍 4 点赞</div>
+                <div class="video-stat">💬 1 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📝 评测</span>
+                <span class="platform-tag">Ignition</span>
+                <a href="https://www.youtube.com/watch?v=BHeKlAbRxWA" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="tournament" data-platform="ACR">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/y3vtUtrVli4/default.jpg" alt="Knocking Out Jeff Boski AND Chris Moorman in the Same $31 Tournament — Then Final Tabling It!?">
+            <div class="video-content">
+              <div class="video-title">Knocking Out Jeff Boski AND Chris Moorman in the Same $31 Tournament — Then Final Tabling It!?</div>
+              <div class="video-meta">
+                <span>Stevie Poker</span>
+                <span>·</span>
+                <span>2026/3/15</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 34 播放</div>
+                <div class="video-stat">👍 11 点赞</div>
+                <div class="video-stat">💬 7 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">🏆 锦标赛</span>
+                <span class="platform-tag">ACR</span>
+                <a href="https://www.youtube.com/watch?v=y3vtUtrVli4" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="CoinPoker">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/3LbgRmNzODo/default.jpg" alt="CoinPoker Promo Code 2026 🎁 Get 150% Bonus up to $2,000">
+            <div class="video-content">
+              <div class="video-title">CoinPoker Promo Code 2026 🎁 Get 150% Bonus up to $2,000</div>
+              <div class="video-meta">
+                <span>Somuchpoker</span>
+                <span>·</span>
+                <span>2026/3/9</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 19 播放</div>
+                <div class="video-stat">👍 1 点赞</div>
+                <div class="video-stat">💬 0 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">CoinPoker</span>
+                <a href="https://www.youtube.com/watch?v=3LbgRmNzODo" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="news" data-platform="CoinPoker">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/3MywKAf35_s/default.jpg" alt="CoinPoker Huge Update! New Layout, Player Winrates &amp; My Session">
+            <div class="video-content">
+              <div class="video-title">CoinPoker Huge Update! New Layout, Player Winrates &amp; My Session</div>
+              <div class="video-meta">
+                <span>Nelson Plays Poker</span>
+                <span>·</span>
+                <span>2026/3/14</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 19 播放</div>
+                <div class="video-stat">👍 0 点赞</div>
+                <div class="video-stat">💬 4 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📰 新闻</span>
+                <span class="platform-tag">CoinPoker</span>
+                <a href="https://www.youtube.com/watch?v=3MywKAf35_s" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="Ignition">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/0EwLCR-3zOM/default.jpg" alt="My Husband Sent Me on Vacation — His Mistress Was at the Same Gate...">
+            <div class="video-content">
+              <div class="video-title">My Husband Sent Me on Vacation — His Mistress Was at the Same Gate...</div>
+              <div class="video-meta">
+                <span>Her Calm Revenge</span>
+                <span>·</span>
+                <span>2026/3/13</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 19 播放</div>
+                <div class="video-stat">👍 1 点赞</div>
+                <div class="video-stat">💬 0 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">Ignition</span>
+                <a href="https://www.youtube.com/watch?v=0EwLCR-3zOM" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="ACR">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/J3i6daQSHeU/default.jpg" alt="REBROADCAST: CoinPoker Grind | Bankroll Challenge | Ep 09 #poker">
+            <div class="video-content">
+              <div class="video-title">REBROADCAST: CoinPoker Grind | Bankroll Challenge | Ep 09 #poker</div>
+              <div class="video-meta">
+                <span>Nate♾️</span>
+                <span>·</span>
+                <span>2026/3/15</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 13 播放</div>
+                <div class="video-stat">👍 0 点赞</div>
+                <div class="video-stat">💬 1 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">ACR</span>
+                <a href="https://www.youtube.com/watch?v=J3i6daQSHeU" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="ACR">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/wXSrNzDbwE4/default.jpg" alt="REBROADCAST: CoinPoker Grind | Bankroll Challenge | Ep 08 #poker">
+            <div class="video-content">
+              <div class="video-title">REBROADCAST: CoinPoker Grind | Bankroll Challenge | Ep 08 #poker</div>
+              <div class="video-meta">
+                <span>Nate♾️</span>
+                <span>·</span>
+                <span>2026/3/11</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 12 播放</div>
+                <div class="video-stat">👍 0 点赞</div>
+                <div class="video-stat">💬 0 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">ACR</span>
+                <a href="https://www.youtube.com/watch?v=wXSrNzDbwE4" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="ACR">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/BG3S156sJUQ/default.jpg" alt="REBROADCAST: CoinPoker Grind | Bankroll Challenge | Ep 07 #poker">
+            <div class="video-content">
+              <div class="video-title">REBROADCAST: CoinPoker Grind | Bankroll Challenge | Ep 07 #poker</div>
+              <div class="video-meta">
+                <span>Nate♾️</span>
+                <span>·</span>
+                <span>2026/3/10</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 11 播放</div>
+                <div class="video-stat">👍 0 点赞</div>
+                <div class="video-stat">💬 1 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">ACR</span>
+                <a href="https://www.youtube.com/watch?v=BG3S156sJUQ" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="ACR">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/kHCdYtGKuSs/default.jpg" alt="CoinPoker  Microstakes to Midstakes | The Climb | #poker">
+            <div class="video-content">
+              <div class="video-title">CoinPoker  Microstakes to Midstakes | The Climb | #poker</div>
+              <div class="video-meta">
+                <span>Nate♾️</span>
+                <span>·</span>
+                <span>2026/3/15</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 9 播放</div>
+                <div class="video-stat">👍 0 点赞</div>
+                <div class="video-stat">💬 1 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">ACR</span>
+                <a href="https://www.youtube.com/watch?v=kHCdYtGKuSs" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="CoinPoker">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/kHCdYtGKuSs/default.jpg" alt="CoinPoker  Microstakes to Midstakes | The Climb | #poker">
+            <div class="video-content">
+              <div class="video-title">CoinPoker  Microstakes to Midstakes | The Climb | #poker</div>
+              <div class="video-meta">
+                <span>Nate♾️</span>
+                <span>·</span>
+                <span>2026/3/15</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 9 播放</div>
+                <div class="video-stat">👍 0 点赞</div>
+                <div class="video-stat">💬 1 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">CoinPoker</span>
+                <a href="https://www.youtube.com/watch?v=kHCdYtGKuSs" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="tutorial" data-platform="BetOnline">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/3YLNImZFUns/default.jpg" alt="The BEST Wager Strategy On Stake!">
+            <div class="video-content">
+              <div class="video-title">The BEST Wager Strategy On Stake!</div>
+              <div class="video-meta">
+                <span>Crasheddd</span>
+                <span>·</span>
+                <span>2026/3/14</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 8 播放</div>
+                <div class="video-stat">👍 1 点赞</div>
+                <div class="video-stat">💬 0 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📚 教程/策略</span>
+                <span class="platform-tag">BetOnline</span>
+                <a href="https://www.youtube.com/watch?v=3YLNImZFUns" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="ACR">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/yYUUNYmtiz0/default.jpg" alt="Play and Explain on 25NL ACR">
+            <div class="video-content">
+              <div class="video-title">Play and Explain on 25NL ACR</div>
+              <div class="video-meta">
+                <span>LowRolla</span>
+                <span>·</span>
+                <span>2026/3/11</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 5 播放</div>
+                <div class="video-stat">👍 0 点赞</div>
+                <div class="video-stat">💬 0 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">ACR</span>
+                <a href="https://www.youtube.com/watch?v=yYUUNYmtiz0" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="tutorial" data-platform="Ignition">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/ATrJ6uEoFxo/default.jpg" alt="I Played 50,000 Hands On Ignition In 2026 – 500nl &amp; 1000nl">
+            <div class="video-content">
+              <div class="video-title">I Played 50,000 Hands On Ignition In 2026 – 500nl &amp; 1000nl</div>
+              <div class="video-meta">
+                <span>Pstacker </span>
+                <span>·</span>
+                <span>2026/3/16</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 5 播放</div>
+                <div class="video-stat">👍 2 点赞</div>
+                <div class="video-stat">💬 1 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📚 教程/策略</span>
+                <span class="platform-tag">Ignition</span>
+                <a href="https://www.youtube.com/watch?v=ATrJ6uEoFxo" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="CoinPoker">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/cNllI8T5Hew/default.jpg" alt="16 CoinPoker德扑资金挑战 Bankroll Challenge">
+            <div class="video-content">
+              <div class="video-title">16 CoinPoker德扑资金挑战 Bankroll Challenge</div>
+              <div class="video-meta">
+                <span>小9  NinePoker</span>
+                <span>·</span>
+                <span>2026/3/9</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 4 播放</div>
+                <div class="video-stat">👍 0 点赞</div>
+                <div class="video-stat">💬 0 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">CoinPoker</span>
+                <a href="https://www.youtube.com/watch?v=cNllI8T5Hew" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="tutorial" data-platform="Ignition">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/HhldLe_TxB0/default.jpg" alt="Stop losing your money! Tap in.">
+            <div class="video-content">
+              <div class="video-title">Stop losing your money! Tap in.</div>
+              <div class="video-meta">
+                <span>Poker Pimp Manual</span>
+                <span>·</span>
+                <span>2026/3/11</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 3 播放</div>
+                <div class="video-stat">👍 1 点赞</div>
+                <div class="video-stat">💬 0 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📚 教程/策略</span>
+                <span class="platform-tag">Ignition</span>
+                <a href="https://www.youtube.com/watch?v=HhldLe_TxB0" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="Ignition">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/E9QQlq2Qvmw/default.jpg" alt="Why Smart Companies Are Becoming B Corps (The 2026 Business Advantage)">
+            <div class="video-content">
+              <div class="video-title">Why Smart Companies Are Becoming B Corps (The 2026 Business Advantage)</div>
+              <div class="video-meta">
+                <span>Your Transformation Station</span>
+                <span>·</span>
+                <span>2026/3/16</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 3 播放</div>
+                <div class="video-stat">👍 1 点赞</div>
+                <div class="video-stat">💬 0 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">Ignition</span>
+                <a href="https://www.youtube.com/watch?v=E9QQlq2Qvmw" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="stream" data-platform="BetOnline">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/id-xYvklNCM/default.jpg" alt="Look at how donkey this guy is. He is like f it. Everything in! Poker is alive, but just harder than">
+            <div class="video-content">
+              <div class="video-title">Look at how donkey this guy is. He is like f it. Everything in! Poker is alive, but just harder than</div>
+              <div class="video-meta">
+                <span>Steven</span>
+                <span>·</span>
+                <span>2026/3/15</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 1 播放</div>
+                <div class="video-stat">👍 0 点赞</div>
+                <div class="video-stat">💬 0 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">🎮 直播/Vlog</span>
+                <span class="platform-tag">BetOnline</span>
+                <a href="https://www.youtube.com/watch?v=id-xYvklNCM" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="ACR">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/blk7lZX2ZUE/default_live.jpg" alt="BLACK CHIP POKER ACR SPINZ">
+            <div class="video-content">
+              <div class="video-title">BLACK CHIP POKER ACR SPINZ</div>
+              <div class="video-meta">
+                <span>ManWithXrayEyes</span>
+                <span>·</span>
+                <span>2026/3/11</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 0 播放</div>
+                <div class="video-stat">👍 0 点赞</div>
+                <div class="video-stat">💬 0 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">ACR</span>
+                <a href="https://www.youtube.com/watch?v=blk7lZX2ZUE" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="video-item" data-category="other" data-platform="Ignition">
+            <img class="video-thumbnail" src="https://i.ytimg.com/vi/q7dRFtIiTMc/default.jpg" alt="Lauren Zoller, Lead Editor at X/AV">
+            <div class="video-content">
+              <div class="video-title">Lauren Zoller, Lead Editor at X/AV</div>
+              <div class="video-meta">
+                <span>Trailer Geeks & Teaser Gods</span>
+                <span>·</span>
+                <span>2026/3/11</span>
+              </div>
+              <div class="video-stats">
+                <div class="video-stat">👁️ 0 播放</div>
+                <div class="video-stat">👍 0 点赞</div>
+                <div class="video-stat">💬 0 评论</div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="category-tag">📦 其他</span>
+                <span class="platform-tag">Ignition</span>
+                <a href="https://www.youtube.com/watch?v=q7dRFtIiTMc" target="_blank" style="margin-left: 10px; color: #2563eb; text-decoration: none;">观看 →</a>
+              </div>
+            </div>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    let currentCategory = 'all';
+    let currentPlatform = 'all';
+    
+    function filterCategory(category) {
+      currentCategory = category;
+      applyFilters();
+      
+      const buttons = document.querySelectorAll('.category-btn');
+      buttons.forEach(btn => btn.classList.remove('active'));
+      event.target.closest('.category-btn').classList.add('active');
+    }
+    
+    function filterPlatform(platform) {
+      currentPlatform = platform;
+      applyFilters();
+      
+      const buttons = document.querySelectorAll('.platform-filter-btn');
+      buttons.forEach(btn => btn.classList.remove('active'));
+      event.target.closest('.platform-filter-btn').classList.add('active');
+    }
+    
+    function applyFilters() {
+      const items = document.querySelectorAll('.video-item');
+      
+      items.forEach(item => {
+        const matchCategory = currentCategory === 'all' || item.dataset.category === currentCategory;
+        const matchPlatform = currentPlatform === 'all' || item.dataset.platform === currentPlatform;
+        
+        if (matchCategory && matchPlatform) {
+          item.style.display = 'flex';
+        } else {
+          item.style.display = 'none';
+        }
+      });
+    }
+  </script>
+</body>
+</html>

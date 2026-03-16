@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KOL库 - 管理与扩展</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f5f5f5; padding: 20px; }
+    .container { max-width: 1400px; margin: 0 auto; }
+    h1 { font-size: 28px; margin-bottom: 10px; color: #333; }
+    .subtitle { color: #666; margin-bottom: 30px; }
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+    .stat-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .stat-number { font-size: 32px; font-weight: bold; color: #2563eb; margin-bottom: 5px; }
+    .stat-label { color: #666; font-size: 14px; }
+    .section { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+    .section-title { font-size: 20px; margin-bottom: 20px; color: #333; border-bottom: 2px solid #2563eb; padding-bottom: 10px; }
+    .keyword-list { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; }
+    .keyword-tag { padding: 8px 16px; background: #e0e7ff; color: #3730a3; border-radius: 6px; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+    .keyword-tag.custom { background: #fef3c7; color: #92400e; }
+    .add-keyword { padding: 8px 16px; border: 2px dashed #ddd; background: white; border-radius: 6px; cursor: pointer; color: #666; }
+    .add-keyword:hover { border-color: #2563eb; color: #2563eb; }
+    .kol-table { width: 100%; border-collapse: collapse; }
+    .kol-table th { background: #f8f9fa; padding: 12px; text-align: left; font-weight: 600; border-bottom: 2px solid #e5e5e5; position: sticky; top: 0; }
+    .kol-table td { padding: 12px; border-bottom: 1px solid #e5e5e5; }
+    .kol-table tr:hover { background: #f8f9fa; }
+    .platform-tag { display: inline-block; padding: 4px 8px; background: #e0e7ff; color: #3730a3; border-radius: 4px; font-size: 11px; margin-right: 5px; }
+    .tier-badge { display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+    .tier-s { background: #fef3c7; color: #92400e; }
+    .tier-a { background: #dbeafe; color: #1e40af; }
+    .tier-b { background: #e0e7ff; color: #3730a3; }
+    .tier-c { background: #f3f4f6; color: #6b7280; }
+    .search-box { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; margin-bottom: 20px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>👥 KOL库 - 管理与扩展</h1>
+    <div class="subtitle">累积所有历史数据 · 持续扩充KOL资源</div>
+    
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-number">62</div>
+        <div class="stat-label">KOL总数</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">14</div>
+        <div class="stat-label">10万+订阅</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">16</div>
+        <div class="stat-label">5万+订阅</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">92</div>
+        <div class="stat-label">累积视频数</div>
+      </div>
+    </div>
+    
+    <div class="section">
+      <div class="section-title">🔍 监控关键词</div>
+      <div class="keyword-list">
+        <div class="keyword-tag">GGPoker</div><div class="keyword-tag">PokerStars</div><div class="keyword-tag">CoinPoker</div><div class="keyword-tag">ACR</div><div class="keyword-tag">BetOnline</div><div class="keyword-tag">Ignition</div><div class="keyword-tag">888poker</div>
+        
+        <div class="add-keyword" onclick="addKeyword()">+ 添加关键词</div>
+      </div>
+      <p style="color: #666; font-size: 13px;">💡 添加新关键词后，运行抓取脚本会自动搜索相关KOL</p>
+    </div>
+    
+    <div class="section">
+      <div class="section-title">📊 KOL排行榜（按订阅数）</div>
+      <input type="text" class="search-box" placeholder="搜索KOL名称..." onkeyup="searchKOL(this.value)">
+      <div style="max-height: 600px; overflow-y: auto;">
+        <table class="kol-table">
+          <thead>
+            <tr>
+              <th>排名</th>
+              <th>等级</th>
+              <th>频道名称</th>
+              <th>订阅数</th>
+              <th>视频数</th>
+              <th>总播放量</th>
+              <th>总点赞</th>
+              <th>提及平台</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="kolTableBody">
+            
+                <tr data-name="london real">
+                  <td>1</td>
+                  <td><span class="tier-badge tier-s">S</span></td>
+                  <td><strong>London Real</strong></td>
+                  <td>2,250,000</td>
+                  <td>2</td>
+                  <td>1,128</td>
+                  <td>30</td>
+                  <td><span class="platform-tag">Ignition</span></td>
+                  <td><a href="https://youtube.com/channel/UCCZVmatSqIMTTB8uExk8xEg" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="pokerstars">
+                  <td>2</td>
+                  <td><span class="tier-badge tier-s">S</span></td>
+                  <td><strong>PokerStars</strong></td>
+                  <td>2,050,000</td>
+                  <td>4</td>
+                  <td>178,489</td>
+                  <td>2,961</td>
+                  <td><span class="platform-tag">PokerStars</span></td>
+                  <td><a href="https://youtube.com/channel/UCGWkDcYbDKP9r--ym28YwAQ" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="fame yt">
+                  <td>3</td>
+                  <td><span class="tier-badge tier-s">S</span></td>
+                  <td><strong>FAME YT</strong></td>
+                  <td>706,000</td>
+                  <td>1</td>
+                  <td>994,987</td>
+                  <td>0</td>
+                  <td><span class="platform-tag">Ignition</span></td>
+                  <td><a href="https://youtube.com/channel/UCDrUN8BC0BLgysiwDFa-hlw" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="888poker">
+                  <td>4</td>
+                  <td><span class="tier-badge tier-s">S</span></td>
+                  <td><strong>888poker</strong></td>
+                  <td>463,000</td>
+                  <td>8</td>
+                  <td>207,984</td>
+                  <td>144</td>
+                  <td><span class="platform-tag">888poker</span></td>
+                  <td><a href="https://youtube.com/channel/UCPBIav_QqkYUI3SvV4arDSA" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="triton poker">
+                  <td>5</td>
+                  <td><span class="tier-badge tier-s">S</span></td>
+                  <td><strong>Triton Poker</strong></td>
+                  <td>417,000</td>
+                  <td>1</td>
+                  <td>102,191</td>
+                  <td>674</td>
+                  <td><span class="platform-tag">GGPoker</span></td>
+                  <td><a href="https://youtube.com/channel/UCpcv404DxfhGYhXgyB9Aoeg" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="ggpoker">
+                  <td>6</td>
+                  <td><span class="tier-badge tier-s">S</span></td>
+                  <td><strong>GGPoker</strong></td>
+                  <td>409,000</td>
+                  <td>1</td>
+                  <td>17,255</td>
+                  <td>480</td>
+                  <td><span class="platform-tag">GGPoker</span></td>
+                  <td><a href="https://youtube.com/channel/UCJPnb9ricOOYLFSlotSfOng" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="pokerfanshome">
+                  <td>7</td>
+                  <td><span class="tier-badge tier-s">S</span></td>
+                  <td><strong>PokerFansHome</strong></td>
+                  <td>312,000</td>
+                  <td>1</td>
+                  <td>143,748</td>
+                  <td>2,212</td>
+                  <td><span class="platform-tag">PokerStars</span></td>
+                  <td><a href="https://youtube.com/channel/UCazvsqRypn_EMnERlPqMq4Q" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="poker metarb">
+                  <td>8</td>
+                  <td><span class="tier-badge tier-s">S</span></td>
+                  <td><strong>Poker MetaRb</strong></td>
+                  <td>301,000</td>
+                  <td>1</td>
+                  <td>61</td>
+                  <td>4</td>
+                  <td><span class="platform-tag">GGPoker</span></td>
+                  <td><a href="https://youtube.com/channel/UCSqXbz9lR4d7-llkmY9l4zA" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="d lucky experience in las vegas">
+                  <td>9</td>
+                  <td><span class="tier-badge tier-s">S</span></td>
+                  <td><strong>D Lucky Experience in Las Vegas</strong></td>
+                  <td>289,000</td>
+                  <td>1</td>
+                  <td>215,836</td>
+                  <td>4,501</td>
+                  <td><span class="platform-tag">Ignition</span></td>
+                  <td><a href="https://youtube.com/channel/UC0DRr0mAiUwxTg00prn5ijg" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="sethy poker">
+                  <td>10</td>
+                  <td><span class="tier-badge tier-s">S</span></td>
+                  <td><strong>Sethy Poker</strong></td>
+                  <td>234,000</td>
+                  <td>1</td>
+                  <td>6,248</td>
+                  <td>289</td>
+                  <td><span class="platform-tag">PokerStars</span></td>
+                  <td><a href="https://youtube.com/channel/UCG461ELAT_eu50sXexb6KUQ" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="yoh viral poker">
+                  <td>11</td>
+                  <td><span class="tier-badge tier-s">S</span></td>
+                  <td><strong>YoH ViraL Poker</strong></td>
+                  <td>176,000</td>
+                  <td>1</td>
+                  <td>1,456</td>
+                  <td>20</td>
+                  <td><span class="platform-tag">CoinPoker</span></td>
+                  <td><a href="https://youtube.com/channel/UCaSN10rVMFrdkAOJ39cLl7w" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="乾坤門五術">
+                  <td>12</td>
+                  <td><span class="tier-badge tier-s">S</span></td>
+                  <td><strong>乾坤門五術</strong></td>
+                  <td>157,000</td>
+                  <td>1</td>
+                  <td>2,175</td>
+                  <td>240</td>
+                  <td><span class="platform-tag">Ignition</span></td>
+                  <td><a href="https://youtube.com/channel/UCTSwTQWkb3UnA4whL2wPVGQ" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="kmartpoker">
+                  <td>13</td>
+                  <td><span class="tier-badge tier-s">S</span></td>
+                  <td><strong>KmartPoker</strong></td>
+                  <td>136,000</td>
+                  <td>2</td>
+                  <td>51,137</td>
+                  <td>1,584</td>
+                  <td><span class="platform-tag">GGPoker</span><span class="platform-tag">PokerStars</span></td>
+                  <td><a href="https://youtube.com/channel/UCwVqlec0MucWEEW7_IBnZAw" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="danielpetersenpoker">
+                  <td>14</td>
+                  <td><span class="tier-badge tier-s">S</span></td>
+                  <td><strong>DanielPetersenPoker</strong></td>
+                  <td>104,000</td>
+                  <td>1</td>
+                  <td>11,884</td>
+                  <td>154</td>
+                  <td><span class="platform-tag">GGPoker</span></td>
+                  <td><a href="https://youtube.com/channel/UCwr_AQu9xBIrDraMtAWln2A" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="pokerstars en español">
+                  <td>15</td>
+                  <td><span class="tier-badge tier-a">A</span></td>
+                  <td><strong>PokerStars en Español</strong></td>
+                  <td>94,400</td>
+                  <td>1</td>
+                  <td>14,121</td>
+                  <td>309</td>
+                  <td><span class="platform-tag">PokerStars</span></td>
+                  <td><a href="https://youtube.com/channel/UCrLgehQEKrGdfW96DEGrcZg" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="jeff boski">
+                  <td>16</td>
+                  <td><span class="tier-badge tier-a">A</span></td>
+                  <td><strong>Jeff Boski</strong></td>
+                  <td>66,500</td>
+                  <td>1</td>
+                  <td>16,744</td>
+                  <td>1,201</td>
+                  <td><span class="platform-tag">ACR</span></td>
+                  <td><a href="https://youtube.com/channel/UC8ydBWZPsbA3jkoeDVZW5VA" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="romance manhwa recap">
+                  <td>17</td>
+                  <td><span class="tier-badge tier-b">B</span></td>
+                  <td><strong>Romance Manhwa Recap</strong></td>
+                  <td>42,900</td>
+                  <td>1</td>
+                  <td>10,997</td>
+                  <td>295</td>
+                  <td><span class="platform-tag">Ignition</span></td>
+                  <td><a href="https://youtube.com/channel/UC1PGwQAOMxTelkEkASJtebA" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="harvey gration">
+                  <td>18</td>
+                  <td><span class="tier-badge tier-b">B</span></td>
+                  <td><strong>Harvey Gration</strong></td>
+                  <td>24,000</td>
+                  <td>1</td>
+                  <td>3,594</td>
+                  <td>312</td>
+                  <td><span class="platform-tag">Ignition</span></td>
+                  <td><a href="https://youtube.com/channel/UCkcVPhy1vfBUN5nsVC0z-9A" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="nick eastwood">
+                  <td>19</td>
+                  <td><span class="tier-badge tier-b">B</span></td>
+                  <td><strong>Nick Eastwood</strong></td>
+                  <td>23,400</td>
+                  <td>1</td>
+                  <td>2,354</td>
+                  <td>92</td>
+                  <td><span class="platform-tag">888poker</span></td>
+                  <td><a href="https://youtube.com/channel/UC2CB3K_PU_7bAShmGM9k5Gg" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="ignition">
+                  <td>20</td>
+                  <td><span class="tier-badge tier-b">B</span></td>
+                  <td><strong>Ignition</strong></td>
+                  <td>23,400</td>
+                  <td>1</td>
+                  <td>3,038</td>
+                  <td>66</td>
+                  <td><span class="platform-tag">Ignition</span></td>
+                  <td><a href="https://youtube.com/channel/UCoFOosnb0obBoluJbBFxLdg" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="acr poker">
+                  <td>21</td>
+                  <td><span class="tier-badge tier-b">B</span></td>
+                  <td><strong>ACR Poker</strong></td>
+                  <td>21,900</td>
+                  <td>3</td>
+                  <td>13,054</td>
+                  <td>182</td>
+                  <td><span class="platform-tag">ACR</span></td>
+                  <td><a href="https://youtube.com/channel/UCUm4P0v0KYKFuGfxNTqKGHw" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="egption poker">
+                  <td>22</td>
+                  <td><span class="tier-badge tier-b">B</span></td>
+                  <td><strong>Egption Poker</strong></td>
+                  <td>21,200</td>
+                  <td>1</td>
+                  <td>4,689</td>
+                  <td>184</td>
+                  <td><span class="platform-tag">GGPoker</span></td>
+                  <td><a href="https://youtube.com/channel/UCGz5ohmD5z_w8XK6sfyWsJQ" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="bella's comic chronicles">
+                  <td>23</td>
+                  <td><span class="tier-badge tier-b">B</span></td>
+                  <td><strong>Bella's Comic Chronicles</strong></td>
+                  <td>18,300</td>
+                  <td>2</td>
+                  <td>4,680</td>
+                  <td>120</td>
+                  <td><span class="platform-tag">Ignition</span></td>
+                  <td><a href="https://youtube.com/channel/UCZ1ynxCvmghl5rR1gjJEkXw" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="revel manga chronicles">
+                  <td>24</td>
+                  <td><span class="tier-badge tier-b">B</span></td>
+                  <td><strong>Revel Manga Chronicles</strong></td>
+                  <td>12,600</td>
+                  <td>1</td>
+                  <td>2,763</td>
+                  <td>81</td>
+                  <td><span class="platform-tag">Ignition</span></td>
+                  <td><a href="https://youtube.com/channel/UC1qJB4TNpRXmxXfTb5FLLew" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="yolan cohen poker">
+                  <td>25</td>
+                  <td><span class="tier-badge tier-b">B</span></td>
+                  <td><strong>Yolan Cohen Poker</strong></td>
+                  <td>12,200</td>
+                  <td>1</td>
+                  <td>2,202</td>
+                  <td>58</td>
+                  <td><span class="platform-tag">GGPoker</span></td>
+                  <td><a href="https://youtube.com/channel/UC2ycNaJ1FvO26xlOIHmSMvQ" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="pokergonewild">
+                  <td>26</td>
+                  <td><span class="tier-badge tier-b">B</span></td>
+                  <td><strong>PokerGoneWild</strong></td>
+                  <td>10,800</td>
+                  <td>1</td>
+                  <td>17,114</td>
+                  <td>169</td>
+                  <td><span class="platform-tag">PokerStars</span></td>
+                  <td><a href="https://youtube.com/channel/UCU5eNoL_oZHQqbrXwxUMh3A" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="inspire & ignite-sushil">
+                  <td>27</td>
+                  <td><span class="tier-badge tier-b">B</span></td>
+                  <td><strong>Inspire & Ignite-sushil</strong></td>
+                  <td>10,400</td>
+                  <td>1</td>
+                  <td>28,658</td>
+                  <td>442</td>
+                  <td><span class="platform-tag">Ignition</span></td>
+                  <td><a href="https://youtube.com/channel/UCd1WQioEkrVHjDJVmtr2U9Q" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="wistern">
+                  <td>28</td>
+                  <td><span class="tier-badge tier-c">C</span></td>
+                  <td><strong>Wistern</strong></td>
+                  <td>7,760</td>
+                  <td>3</td>
+                  <td>3,565</td>
+                  <td>61</td>
+                  <td><span class="platform-tag">888poker</span><span class="platform-tag">CoinPoker</span></td>
+                  <td><a href="https://youtube.com/channel/UCW3R2H96VAI9Ksj7p4RH_hg" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="jq poker ">
+                  <td>29</td>
+                  <td><span class="tier-badge tier-c">C</span></td>
+                  <td><strong>JQ Poker </strong></td>
+                  <td>7,450</td>
+                  <td>1</td>
+                  <td>1,725</td>
+                  <td>140</td>
+                  <td><span class="platform-tag">ACR</span></td>
+                  <td><a href="https://youtube.com/channel/UCjZNLZAWC4GeEi9WyzhyO9Q" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="blue whale comics review">
+                  <td>30</td>
+                  <td><span class="tier-badge tier-c">C</span></td>
+                  <td><strong>Blue Whale Comics Review</strong></td>
+                  <td>7,010</td>
+                  <td>1</td>
+                  <td>2,153</td>
+                  <td>58</td>
+                  <td><span class="platform-tag">Ignition</span></td>
+                  <td><a href="https://youtube.com/channel/UCW-PhRogD-yYdsTIqWoBnfg" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="con de mime">
+                  <td>31</td>
+                  <td><span class="tier-badge tier-c">C</span></td>
+                  <td><strong>CON DE MIME</strong></td>
+                  <td>6,620</td>
+                  <td>1</td>
+                  <td>147</td>
+                  <td>10</td>
+                  <td><span class="platform-tag">CoinPoker</span></td>
+                  <td><a href="https://youtube.com/channel/UCsolSVpBOOtQSR0_N6n4nOA" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="norman teaches poker">
+                  <td>32</td>
+                  <td><span class="tier-badge tier-c">C</span></td>
+                  <td><strong>Norman Teaches Poker</strong></td>
+                  <td>6,200</td>
+                  <td>1</td>
+                  <td>43</td>
+                  <td>1</td>
+                  <td><span class="platform-tag">Ignition</span></td>
+                  <td><a href="https://youtube.com/channel/UCE2fgrgBhED5-1tPQIgxAIA" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="all in insights">
+                  <td>33</td>
+                  <td><span class="tier-badge tier-c">C</span></td>
+                  <td><strong>All In Insights</strong></td>
+                  <td>5,790</td>
+                  <td>1</td>
+                  <td>8,843</td>
+                  <td>144</td>
+                  <td><span class="platform-tag">GGPoker</span></td>
+                  <td><a href="https://youtube.com/channel/UCXa1KlVfWrYe7wSlbBoIGzQ" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="poker ain’t life productions">
+                  <td>34</td>
+                  <td><span class="tier-badge tier-c">C</span></td>
+                  <td><strong>Poker Ain’t Life Productions</strong></td>
+                  <td>4,670</td>
+                  <td>1</td>
+                  <td>50</td>
+                  <td>10</td>
+                  <td><span class="platform-tag">CoinPoker</span></td>
+                  <td><a href="https://youtube.com/channel/UCexyn3pkNgfw8d8MruxTXiA" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="somuchpoker">
+                  <td>35</td>
+                  <td><span class="tier-badge tier-c">C</span></td>
+                  <td><strong>Somuchpoker</strong></td>
+                  <td>4,660</td>
+                  <td>1</td>
+                  <td>19</td>
+                  <td>1</td>
+                  <td><span class="platform-tag">CoinPoker</span></td>
+                  <td><a href="https://youtube.com/channel/UCOvQ-r1md0BmBkSnWuMo5Lw" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="jon pardy poker ">
+                  <td>36</td>
+                  <td><span class="tier-badge tier-c">C</span></td>
+                  <td><strong>Jon Pardy Poker </strong></td>
+                  <td>4,510</td>
+                  <td>2</td>
+                  <td>631</td>
+                  <td>61</td>
+                  <td><span class="platform-tag">ACR</span></td>
+                  <td><a href="https://youtube.com/channel/UCq5VaM6pzBa7BWSw5t22-WQ" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="pulsarpoker">
+                  <td>37</td>
+                  <td><span class="tier-badge tier-c">C</span></td>
+                  <td><strong>PulsarPoker</strong></td>
+                  <td>4,070</td>
+                  <td>6</td>
+                  <td>17,721</td>
+                  <td>438</td>
+                  <td><span class="platform-tag">ACR</span></td>
+                  <td><a href="https://youtube.com/channel/UC5OnxPo-hH_QQQ-nVvT_B4A" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="pokerstars live @ the hippodrome">
+                  <td>38</td>
+                  <td><span class="tier-badge tier-c">C</span></td>
+                  <td><strong>PokerStars Live @ The Hippodrome</strong></td>
+                  <td>2,670</td>
+                  <td>1</td>
+                  <td>1,843</td>
+                  <td>14</td>
+                  <td><span class="platform-tag">PokerStars</span></td>
+                  <td><a href="https://youtube.com/channel/UCmKwBNSy09jGicNR_wTf42Q" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="orhan dönmez">
+                  <td>39</td>
+                  <td><span class="tier-badge tier-c">C</span></td>
+                  <td><strong>Orhan Dönmez</strong></td>
+                  <td>2,470</td>
+                  <td>1</td>
+                  <td>72</td>
+                  <td>0</td>
+                  <td><span class="platform-tag">Ignition</span></td>
+                  <td><a href="https://youtube.com/channel/UCvSuD-YBLOQo-fbrDENEPZg" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="poker highlights">
+                  <td>40</td>
+                  <td><span class="tier-badge tier-c">C</span></td>
+                  <td><strong>Poker Highlights</strong></td>
+                  <td>2,440</td>
+                  <td>1</td>
+                  <td>48</td>
+                  <td>1</td>
+                  <td><span class="platform-tag">ACR</span></td>
+                  <td><a href="https://youtube.com/channel/UCDy8GTKi-kk82hdk9y_hDXQ" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="improve my poker">
+                  <td>41</td>
+                  <td><span class="tier-badge tier-c">C</span></td>
+                  <td><strong>Improve My Poker</strong></td>
+                  <td>2,400</td>
+                  <td>1</td>
+                  <td>241</td>
+                  <td>14</td>
+                  <td><span class="platform-tag">ACR</span></td>
+                  <td><a href="https://youtube.com/channel/UCQzIswsVdBTQU2CpuoRlFxg" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="pokerstrategy.com">
+                  <td>42</td>
+                  <td><span class="tier-badge tier-c">C</span></td>
+                  <td><strong>PokerStrategy.com</strong></td>
+                  <td>1,660</td>
+                  <td>2</td>
+                  <td>190</td>
+                  <td>6</td>
+                  <td><span class="platform-tag">ACR</span><span class="platform-tag">CoinPoker</span></td>
+                  <td><a href="https://youtube.com/channel/UCYUlPbiU5lGabXpZ6TiT4lg" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="poker pot">
+                  <td>43</td>
+                  <td><span class="tier-badge tier-c">C</span></td>
+                  <td><strong>Poker Pot</strong></td>
+                  <td>1,570</td>
+                  <td>1</td>
+                  <td>488</td>
+                  <td>8</td>
+                  <td><span class="platform-tag">Ignition</span></td>
+                  <td><a href="https://youtube.com/channel/UCJI7VwSi-8nV4FuygT-pb7Q" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="vivão poker cash">
+                  <td>44</td>
+                  <td><span class="tier-badge tier-c">C</span></td>
+                  <td><strong>Vivão Poker Cash</strong></td>
+                  <td>1,540</td>
+                  <td>1</td>
+                  <td>160</td>
+                  <td>23</td>
+                  <td><span class="platform-tag">GGPoker</span></td>
+                  <td><a href="https://youtube.com/channel/UCRd3LvDtjF24nhDUmIGyD2Q" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="52outs">
+                  <td>45</td>
+                  <td><span class="tier-badge tier-c">C</span></td>
+                  <td><strong>52Outs</strong></td>
+                  <td>1,470</td>
+                  <td>1</td>
+                  <td>42</td>
+                  <td>2</td>
+                  <td><span class="platform-tag">GGPoker</span></td>
+                  <td><a href="https://youtube.com/channel/UCUby14THuVv-X5nkVPG84Vw" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="cblez">
+                  <td>46</td>
+                  <td><span class="tier-badge tier-c">C</span></td>
+                  <td><strong>cblez</strong></td>
+                  <td>1,460</td>
+                  <td>1</td>
+                  <td>521</td>
+                  <td>7</td>
+                  <td><span class="platform-tag">ACR</span></td>
+                  <td><a href="https://youtube.com/channel/UCc4yVM2aYfo_ZgYayosUK-A" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="漫趣耕耘社">
+                  <td>47</td>
+                  <td><span class="tier-badge tier-c">C</span></td>
+                  <td><strong>漫趣耕耘社</strong></td>
+                  <td>1,300</td>
+                  <td>1</td>
+                  <td>12,726</td>
+                  <td>192</td>
+                  <td><span class="platform-tag">Ignition</span></td>
+                  <td><a href="https://youtube.com/channel/UC9-63i6g2Q-jm1CBD3FoD2A" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="nelson plays poker">
+                  <td>48</td>
+                  <td><span class="tier-badge tier-c">C</span></td>
+                  <td><strong>Nelson Plays Poker</strong></td>
+                  <td>318</td>
+                  <td>1</td>
+                  <td>19</td>
+                  <td>0</td>
+                  <td><span class="platform-tag">CoinPoker</span></td>
+                  <td><a href="https://youtube.com/channel/UCEEuIPHl3YMTVaOHwCVmeHQ" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="poker cho nguoi bat dau( poker for dummies)">
+                  <td>49</td>
+                  <td><span class="tier-badge tier-c">C</span></td>
+                  <td><strong>POKER cho nguoi bat dau( poker for dummies)</strong></td>
+                  <td>293</td>
+                  <td>1</td>
+                  <td>1,308</td>
+                  <td>8</td>
+                  <td><span class="platform-tag">ACR</span></td>
+                  <td><a href="https://youtube.com/channel/UCeUfk40QrzBWnYe2AP4dOfA" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="crasheddd">
+                  <td>50</td>
+                  <td><span class="tier-badge tier-c">C</span></td>
+                  <td><strong>Crasheddd</strong></td>
+                  <td>282</td>
+                  <td>1</td>
+                  <td>8</td>
+                  <td>1</td>
+                  <td><span class="platform-tag">BetOnline</span></td>
+                  <td><a href="https://youtube.com/channel/UCSgbbKyrV2x35cSjkSEQCaQ" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="pstacker ">
+                  <td>51</td>
+                  <td><span class="tier-badge tier-c">C</span></td>
+                  <td><strong>Pstacker </strong></td>
+                  <td>265</td>
+                  <td>2</td>
+                  <td>41</td>
+                  <td>6</td>
+                  <td><span class="platform-tag">Ignition</span></td>
+                  <td><a href="https://youtube.com/channel/UCKVP52-zQQcMuCvrmVh8CTg" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="empire poker">
+                  <td>52</td>
+                  <td><span class="tier-badge tier-c">C</span></td>
+                  <td><strong>Empire Poker</strong></td>
+                  <td>216</td>
+                  <td>2</td>
+                  <td>416</td>
+                  <td>1</td>
+                  <td><span class="platform-tag">Ignition</span></td>
+                  <td><a href="https://youtube.com/channel/UCDTI1BNsSFRMOnrsxssmx3A" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="poker pimp manual">
+                  <td>53</td>
+                  <td><span class="tier-badge tier-c">C</span></td>
+                  <td><strong>Poker Pimp Manual</strong></td>
+                  <td>167</td>
+                  <td>1</td>
+                  <td>3</td>
+                  <td>1</td>
+                  <td><span class="platform-tag">Ignition</span></td>
+                  <td><a href="https://youtube.com/channel/UCE-EBxC2MJR2pKkcwXEdJIQ" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="nate♾️">
+                  <td>54</td>
+                  <td><span class="tier-badge tier-c">C</span></td>
+                  <td><strong>Nate♾️</strong></td>
+                  <td>98</td>
+                  <td>5</td>
+                  <td>54</td>
+                  <td>0</td>
+                  <td><span class="platform-tag">ACR</span><span class="platform-tag">CoinPoker</span></td>
+                  <td><a href="https://youtube.com/channel/UCXmNW-o0pN8_onES-_fuEvQ" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="your transformation station">
+                  <td>55</td>
+                  <td><span class="tier-badge tier-c">C</span></td>
+                  <td><strong>Your Transformation Station</strong></td>
+                  <td>61</td>
+                  <td>1</td>
+                  <td>3</td>
+                  <td>1</td>
+                  <td><span class="platform-tag">Ignition</span></td>
+                  <td><a href="https://youtube.com/channel/UCLavR7YxPTZoZGRJhqcfqYw" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="steven">
+                  <td>56</td>
+                  <td><span class="tier-badge tier-c">C</span></td>
+                  <td><strong>Steven</strong></td>
+                  <td>51</td>
+                  <td>1</td>
+                  <td>1</td>
+                  <td>0</td>
+                  <td><span class="platform-tag">BetOnline</span></td>
+                  <td><a href="https://youtube.com/channel/UCyQ-qcqlSHAOLF1raBd1gHg" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="manwithxrayeyes">
+                  <td>57</td>
+                  <td><span class="tier-badge tier-c">C</span></td>
+                  <td><strong>ManWithXrayEyes</strong></td>
+                  <td>40</td>
+                  <td>1</td>
+                  <td>0</td>
+                  <td>0</td>
+                  <td><span class="platform-tag">ACR</span></td>
+                  <td><a href="https://youtube.com/channel/UCkpWsOfWIrhNsasPyla09bA" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="stevie poker">
+                  <td>58</td>
+                  <td><span class="tier-badge tier-c">C</span></td>
+                  <td><strong>Stevie Poker</strong></td>
+                  <td>24</td>
+                  <td>1</td>
+                  <td>34</td>
+                  <td>11</td>
+                  <td><span class="platform-tag">ACR</span></td>
+                  <td><a href="https://youtube.com/channel/UCRGwADjMzQoTjmiwPT0PeDQ" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="小9  ninepoker">
+                  <td>59</td>
+                  <td><span class="tier-badge tier-c">C</span></td>
+                  <td><strong>小9  NinePoker</strong></td>
+                  <td>13</td>
+                  <td>1</td>
+                  <td>4</td>
+                  <td>0</td>
+                  <td><span class="platform-tag">CoinPoker</span></td>
+                  <td><a href="https://youtube.com/channel/UCCvjDLvrNPodLuu8R0hcRBQ" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="lowrolla">
+                  <td>60</td>
+                  <td><span class="tier-badge tier-c">C</span></td>
+                  <td><strong>LowRolla</strong></td>
+                  <td>8</td>
+                  <td>1</td>
+                  <td>5</td>
+                  <td>0</td>
+                  <td><span class="platform-tag">ACR</span></td>
+                  <td><a href="https://youtube.com/channel/UCbstwBVQ77U00xmdHWzfCiw" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="trailer geeks & teaser gods">
+                  <td>61</td>
+                  <td><span class="tier-badge tier-c">C</span></td>
+                  <td><strong>Trailer Geeks & Teaser Gods</strong></td>
+                  <td>7</td>
+                  <td>1</td>
+                  <td>0</td>
+                  <td>0</td>
+                  <td><span class="platform-tag">Ignition</span></td>
+                  <td><a href="https://youtube.com/channel/UCZxeN8ulZ8HIDHr52rb75DQ" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+                <tr data-name="her calm revenge">
+                  <td>62</td>
+                  <td><span class="tier-badge tier-c">C</span></td>
+                  <td><strong>Her Calm Revenge</strong></td>
+                  <td>0</td>
+                  <td>1</td>
+                  <td>19</td>
+                  <td>1</td>
+                  <td><span class="platform-tag">Ignition</span></td>
+                  <td><a href="https://youtube.com/channel/UC5rkL0vbrVNgbXDcxvqFCug" target="_blank" style="color: #2563eb; text-decoration: none;">查看 →</a></td>
+                </tr>
+              
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    function searchKOL(query) {
+      const rows = document.querySelectorAll('#kolTableBody tr');
+      const q = query.toLowerCase();
+      
+      rows.forEach(row => {
+        const name = row.dataset.name;
+        if (name.includes(q)) {
+          row.style.display = 'table-row';
+        } else {
+          row.style.display = 'none';
+        }
+      });
+    }
+    
+    function addKeyword() {
+      const keyword = prompt('输入新关键词（例如：poker strategy, poker vlog）:');
+      if (keyword && keyword.trim()) {
+        alert('关键词已添加！请运行抓取脚本更新数据。\n\n命令：node scripts/fetch-youtube-api.js');
+        // TODO: 保存到keywords.json
+      }
+    }
+    
+    function removeKeyword(keyword) {
+      if (confirm('确定删除关键词 "' + keyword + '"？')) {
+        alert('关键词已删除！');
+        // TODO: 从keywords.json删除
+      }
+    }
+  </script>
+</body>
+</html>

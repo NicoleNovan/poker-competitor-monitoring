@@ -1,0 +1,2059 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>竞品活动监测库</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; padding: 20px; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        h1 { font-size: 28px; margin-bottom: 10px; color: #333; }
+        .subtitle { color: #666; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        .lang-switch { display: flex; gap: 0.5rem; }
+        .lang-btn { padding: 8px 16px; border: 1px solid #ddd; background: white; border-radius: 6px; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+        .lang-btn:hover { background: #f8f9fa; }
+        .lang-btn.active { background: #2563eb; color: white; border-color: #2563eb; }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .stat-number { font-size: 32px; font-weight: bold; color: #2563eb; margin-bottom: 5px; }
+        .stat-label { color: #666; font-size: 14px; }
+        .activities-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1.5rem; }
+        .activity-card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05); cursor: pointer; transition: transform 0.3s; }
+        .activity-card:hover { transform: translateY(-4px); box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
+        .activity-header { padding: 1.5rem; border-bottom: 1px solid #f0f0f0; }
+        .activity-platform { display: inline-block; padding: 0.25rem 0.75rem; background: #667eea; color: white; border-radius: 12px; font-size: 0.75rem; margin-bottom: 0.75rem; }
+        .activity-title { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; }
+        .activity-type { display: inline-block; padding: 0.25rem 0.75rem; background: #f0f0f0; border-radius: 12px; font-size: 0.8rem; }
+        .activity-body { padding: 1.5rem; }
+        .activity-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+        .meta-item { font-size: 0.85rem; }
+        .meta-label { color: #999; margin-bottom: 0.25rem; }
+        .meta-value { color: #333; font-weight: 600; }
+        .activity-highlights { background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-top: 1rem; }
+        .activity-highlights h4 { font-size: 0.9rem; color: #666; margin-bottom: 0.5rem; }
+        .activity-highlights ul { list-style: none; font-size: 0.85rem; }
+        .activity-highlights li { padding: 0.25rem 0; padding-left: 1.25rem; position: relative; }
+        .activity-highlights li:before { content: "✓"; position: absolute; left: 0; color: #667eea; font-weight: bold; }
+        .search-box { width: 100%; padding: 0.75rem 1rem; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem; margin-bottom: 1rem; }
+        .search-box:focus { outline: none; border-color: #667eea; }
+        .filters { background: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .filter-group { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem; }
+        .filter-btn { padding: 0.5rem 1rem; border: 2px solid #e0e0e0; background: white; border-radius: 20px; cursor: pointer; transition: all 0.3s; }
+        .filter-btn:hover { border-color: #667eea; color: #667eea; }
+        .filter-btn.active { background: #667eea; color: white; border-color: #667eea; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; overflow-y: auto; }
+        .modal.active { display: flex; align-items: flex-start; justify-content: center; padding: 2rem; padding-top: 4rem; }
+        .modal-content { background: white; border-radius: 16px; max-width: 900px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+        .modal-header { padding: 2rem; border-bottom: 1px solid #f0f0f0; position: sticky; top: 0; background: white; z-index: 10; display: flex; justify-content: space-between; }
+        .modal-close { font-size: 2rem; cursor: pointer; color: #999; line-height: 1; }
+        .modal-close:hover { color: #333; }
+        .modal-body { padding: 2rem; }
+        .detail-section { margin-bottom: 2rem; }
+        .detail-section h3 { font-size: 1.25rem; margin-bottom: 1rem; color: #667eea; }
+        .detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+        .detail-item { background: #f8f9fa; padding: 1rem; border-radius: 8px; }
+        .detail-item strong { display: block; color: #666; font-size: 0.85rem; margin-bottom: 0.5rem; }
+        .detail-item span { color: #333; font-size: 1rem; }
+        .view-original-btn { margin-top: 1rem; padding: 0.75rem 1.5rem; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 1rem; }
+        .view-original-btn:hover { background: #5568d3; }
+        .tab-buttons { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 2px solid #f0f0f0; }
+        .tab-btn { padding: 0.75rem 1.5rem; border: none; background: transparent; cursor: pointer; font-weight: 600; color: #666; border-bottom: 3px solid transparent; transition: all 0.3s; }
+        .tab-btn:hover { color: #667eea; }
+        .tab-btn.active { color: #667eea; border-bottom-color: #667eea; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .original-content { background: white; padding: 2rem; border-radius: 8px; line-height: 1.8; max-height: 600px; overflow-y: auto; }
+        .original-content h1 { font-size: 1.75rem; color: #333; margin-bottom: 0.5rem; border-bottom: 3px solid #667eea; padding-bottom: 0.5rem; }
+        .original-content h2 { font-size: 1.5rem; color: #667eea; margin-top: 2rem; margin-bottom: 1rem; }
+        .original-content h3 { font-size: 1.25rem; color: #555; margin-top: 1.5rem; margin-bottom: 0.75rem; }
+        .original-content h4 { font-size: 1.1rem; color: #666; margin-top: 1rem; margin-bottom: 0.5rem; }
+        .original-content p { margin-bottom: 1rem; color: #333; }
+        .original-content ul, .original-content ol { margin-left: 2rem; margin-bottom: 1rem; }
+        .original-content li { margin-bottom: 0.5rem; color: #333; }
+        .original-content strong { color: #667eea; font-weight: 600; }
+        .original-content code { background: #f8f9fa; padding: 0.2rem 0.5rem; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 0.9em; }
+        .original-content hr { border: none; border-top: 2px solid #f0f0f0; margin: 2rem 0; }
+        .original-content blockquote { border-left: 4px solid #667eea; padding-left: 1rem; margin: 1rem 0; color: #666; font-style: italic; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📢 活动监测库</h1>
+        <div class="subtitle">
+            <span data-i18n="subtitle">实时追踪竞品活动，快速学习和复制</span>
+            <div class="lang-switch">
+                <button class="lang-btn active" onclick="switchLang('zh')">中文</button>
+                <button class="lang-btn" onclick="switchLang('en')">English</button>
+            </div>
+        </div>
+        
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number">12</div>
+                <div class="stat-label" data-i18n="stat-total">总活动数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">4</div>
+                <div class="stat-label" data-i18n="stat-platform">监测平台</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">5</div>
+                <div class="stat-label" data-i18n="stat-type">活动类型</div>
+            </div>
+        </div>
+        
+        <div class="filters">
+            <input type="text" class="search-box" id="searchBox" placeholder="🔍 搜索活动名称、平台或关键词...">
+            <div>
+                <strong data-i18n="filter-platform-label">平台：</strong>
+                <div class="filter-group">
+                    <button class="filter-btn active" data-filter="platform" data-value="all" data-i18n="filter-all">全部</button>
+                    <button class="filter-btn" data-filter="platform" data-value="CoinPoker">CoinPoker</button>
+                    <button class="filter-btn" data-filter="platform" data-value="GGPoker">GGPoker</button>
+                    <button class="filter-btn" data-filter="platform" data-value="888poker">888poker</button>
+                    <button class="filter-btn" data-filter="platform" data-value="PokerStars">PokerStars</button>
+                </div>
+            </div>
+            <div style="margin-top: 1rem;">
+                <strong data-i18n="filter-type-label">类型：</strong>
+                <div class="filter-group">
+                    <button class="filter-btn active" data-filter="type" data-value="all" data-i18n="filter-all">全部</button>
+                    <button class="filter-btn" data-filter="type" data-value="返水">返水</button>
+                    <button class="filter-btn" data-filter="type" data-value="锦标赛">锦标赛</button>
+                    <button class="filter-btn" data-filter="type" data-value="其他">其他</button>
+                    <button class="filter-btn" data-filter="type" data-value="首充">首充</button>
+                    <button class="filter-btn" data-filter="type" data-value="金币活动">金币活动</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="activities-grid" id="grid"></div>
+    </div>
+    
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle"></h2>
+                <span class="modal-close" onclick="closeModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="tab-buttons">
+                    <button class="tab-btn active" onclick="switchTab('summary')" data-i18n="tab-summary">摘要</button>
+                    <button class="tab-btn" onclick="switchTab('original')" data-i18n="tab-original">原文</button>
+                </div>
+                <div id="tabSummary" class="tab-content active"></div>
+                <div id="tabOriginal" class="tab-content"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const i18n = {
+            zh: {
+                title: '🎯 竞品活动监测库',
+                subtitle: '实时追踪竞品活动，快速学习和复制',
+                'stat-total': '总活动数',
+                'stat-platform': '监测平台',
+                'stat-type': '活动类型',
+                'filter-platform-label': '平台：',
+                'filter-type-label': '类型：',
+                'filter-all': '全部',
+                'type-deposit': '首充奖励',
+                'type-rakeback': '返水/Rakeback',
+                'type-tournament': '锦标赛',
+                'tab-summary': '摘要',
+                'tab-original': '原文',
+                'activity-time': '活动时间',
+                'activity-amount': '奖励金额',
+                'highlights': '💡 亮点',
+                'basic-info': '📋 基本信息',
+                'platform': '平台',
+                'type': '活动类型',
+                'time': '活动时间',
+                'priority': '优先级',
+                'rules': '📐 活动规则拆解',
+                'threshold': '参与门槛',
+                'amount': '奖励结构',
+                'release': '奖励发放',
+                'duration': '有效期',
+                'games': '游戏限制',
+                'wagering': '流水要求',
+                'innovation': '💡 创新亮点'
+            },
+            en: {
+                title: '🎯 Competitor Activity Monitor',
+                subtitle: 'Track competitor activities in real-time',
+                'stat-total': 'Total Activities',
+                'stat-platform': 'Platforms',
+                'stat-type': 'Activity Types',
+                'filter-platform-label': 'Platform:',
+                'filter-type-label': 'Type:',
+                'filter-all': 'All',
+                'type-deposit': 'First Deposit',
+                'type-rakeback': 'Rakeback',
+                'type-tournament': 'Tournament',
+                'tab-summary': 'Summary',
+                'tab-original': 'Original',
+                'activity-time': 'Time',
+                'activity-amount': 'Reward',
+                'highlights': '💡 Highlights',
+                'basic-info': '📋 Basic Info',
+                'platform': 'Platform',
+                'type': 'Type',
+                'time': 'Time',
+                'priority': 'Priority',
+                'rules': '📐 Rules Breakdown',
+                'threshold': 'Threshold',
+                'amount': 'Reward',
+                'release': 'Release',
+                'duration': 'Duration',
+                'games': 'Games',
+                'wagering': 'Wagering',
+                'innovation': '💡 Innovation'
+            }
+        };
+        
+        let currentLang = 'zh';
+        
+        function switchLang(lang) {
+            currentLang = lang;
+            document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (i18n[lang][key]) el.textContent = i18n[lang][key];
+            });
+            render();
+        }
+        
+        const activities = [
+  {
+    "id": 1,
+    "platform": "CoinPoker",
+    "title": {
+      "zh": "iPhone App Launch",
+      "en": "iPhone App Launch"
+    },
+    "type": "返水",
+    "time": {
+      "zh": "2026-03-12",
+      "en": "2026-03-12"
+    },
+    "amount": "100% Rakeback",
+    "priority": "⭐⭐⭐",
+    "highlights": {
+      "zh": [
+        "移动端是必须的",
+        "多种下载方式",
+        "产品发布配合营销"
+      ],
+      "en": [
+        "移动端是必须的",
+        "多种下载方式",
+        "产品发布配合营销"
+      ]
+    },
+    "file": "coinpoker/2026-03-03-iphone-launch-complete.md"
+  },
+  {
+    "id": 2,
+    "platform": "CoinPoker",
+    "title": {
+      "zh": "100% Rakeback: All Rake Paid Back in March",
+      "en": "100% Rakeback: All Rake Paid Back in March"
+    },
+    "type": "返水",
+    "time": {
+      "zh": "2026-03-12",
+      "en": "2026-03-12"
+    },
+    "amount": "100% Rakeback",
+    "priority": "⭐⭐⭐",
+    "highlights": {
+      "zh": [
+        "产品更新时的活动设计",
+        "两阶段活动设计",
+        "无限制提现策略"
+      ],
+      "en": [
+        "产品更新时的活动设计",
+        "两阶段活动设计",
+        "无限制提现策略"
+      ]
+    },
+    "file": "coinpoker/2026-03-rakeback-complete.md"
+  },
+  {
+    "id": 3,
+    "platform": "CoinPoker",
+    "title": {
+      "zh": "150% Welcome Bonus",
+      "en": "150% Welcome Bonus"
+    },
+    "type": "返水",
+    "time": {
+      "zh": "2026-03-12",
+      "en": "2026-03-12"
+    },
+    "amount": "100% Rakeback",
+    "priority": "⭐⭐⭐",
+    "highlights": {
+      "zh": [
+        "渐进式解锁优于里程碑制",
+        "清晰的查看入口",
+        "多种充值方式"
+      ],
+      "en": [
+        "渐进式解锁优于里程碑制",
+        "清晰的查看入口",
+        "多种充值方式"
+      ]
+    },
+    "file": "coinpoker/2026-03-signup-bonus-complete.md"
+  },
+  {
+    "id": 4,
+    "platform": "CoinPoker",
+    "title": {
+      "zh": "CoinMasters（金币大师赛）",
+      "en": "CoinMasters（金币大师赛）"
+    },
+    "type": "锦标赛",
+    "time": {
+      "zh": "2026-03-12",
+      "en": "2026-03-12"
+    },
+    "amount": "$100,000",
+    "priority": "⭐⭐⭐",
+    "highlights": {
+      "zh": [
+        "长期活动建立粘性",
+        "实体奖品增加价值感",
+        "多种晋级途径"
+      ],
+      "en": [
+        "长期活动建立粘性",
+        "实体奖品增加价值感",
+        "多种晋级途径"
+      ]
+    },
+    "file": "coinpoker/2026-coinmasters-complete.md"
+  },
+  {
+    "id": 5,
+    "platform": "GGPoker",
+    "title": {
+      "zh": "$100,000 Freeroll for X Followers",
+      "en": "$100,000 Freeroll for X Followers"
+    },
+    "type": "锦标赛",
+    "time": {
+      "zh": "2026-03-12",
+      "en": "2026-03-12"
+    },
+    "amount": "$100,000",
+    "priority": "⭐⭐⭐",
+    "highlights": {
+      "zh": [
+        "用Freeroll换取社交媒体增长",
+        "稀缺性制造紧迫感",
+        "多渠道联动"
+      ],
+      "en": [
+        "用Freeroll换取社交媒体增长",
+        "稀缺性制造紧迫感",
+        "多渠道联动"
+      ]
+    },
+    "file": "ggpoker/2026-03-11-100k-freeroll-complete.md"
+  },
+  {
+    "id": 6,
+    "platform": "888poker",
+    "title": {
+      "zh": "$20 Free Bonus (No Deposit Needed)",
+      "en": "$20 Free Bonus (No Deposit Needed)"
+    },
+    "type": "其他",
+    "time": {
+      "zh": "2026-03-13",
+      "en": "2026-03-13"
+    },
+    "amount": "N/A",
+    "priority": "⭐⭐",
+    "highlights": {
+      "zh": [
+        "无存款注册奖励",
+        "金额设置",
+        "简化流程"
+      ],
+      "en": [
+        "无存款注册奖励",
+        "金额设置",
+        "简化流程"
+      ]
+    },
+    "file": "888poker/2026-03-20-free-bonus-complete.md"
+  },
+  {
+    "id": 7,
+    "platform": "888poker",
+    "title": {
+      "zh": "$888 Welcome Bonus",
+      "en": "$888 Welcome Bonus"
+    },
+    "type": "首充",
+    "time": {
+      "zh": "2026-03-13",
+      "en": "2026-03-13"
+    },
+    "amount": "N/A",
+    "priority": "⭐⭐",
+    "highlights": {
+      "zh": [
+        "Promo Code系统",
+        "高额首充奖励",
+        "分批释放机制"
+      ],
+      "en": [
+        "Promo Code系统",
+        "高额首充奖励",
+        "分批释放机制"
+      ]
+    },
+    "file": "888poker/2026-03-888-welcome-bonus-complete.md"
+  },
+  {
+    "id": 8,
+    "platform": "PokerStars",
+    "title": {
+      "zh": "Play for a share of 50 billion chips",
+      "en": "Play for a share of 50 billion chips"
+    },
+    "type": "金币活动",
+    "time": {
+      "zh": "2026-03-14",
+      "en": "2026-03-14"
+    },
+    "amount": "N/A",
+    "priority": "⭐⭐",
+    "highlights": {
+      "zh": [],
+      "en": []
+    },
+    "file": "pokerstars/2026-03-50billion-chips-complete.md"
+  },
+  {
+    "id": 9,
+    "platform": "PokerStars",
+    "title": {
+      "zh": "Play Money Tournament Leader Boards",
+      "en": "Play Money Tournament Leader Boards"
+    },
+    "type": "金币活动",
+    "time": {
+      "zh": "2026-03-14",
+      "en": "2026-03-14"
+    },
+    "amount": "N/A",
+    "priority": "⭐⭐",
+    "highlights": {
+      "zh": [],
+      "en": []
+    },
+    "file": "pokerstars/2026-03-play-money-leaderboard-complete.md"
+  },
+  {
+    "id": 10,
+    "platform": "PokerStars",
+    "title": {
+      "zh": "Play Money Tournament Schedule",
+      "en": "Play Money Tournament Schedule"
+    },
+    "type": "金币活动",
+    "time": {
+      "zh": "2026-03-14",
+      "en": "2026-03-14"
+    },
+    "amount": "N/A",
+    "priority": "⭐⭐",
+    "highlights": {
+      "zh": [],
+      "en": []
+    },
+    "file": "pokerstars/2026-03-play-money-schedule-complete.md"
+  },
+  {
+    "id": 11,
+    "platform": "PokerStars",
+    "title": {
+      "zh": "Play Money Stars",
+      "en": "Play Money Stars"
+    },
+    "type": "金币活动",
+    "time": {
+      "zh": "2026-03-14",
+      "en": "2026-03-14"
+    },
+    "amount": "N/A",
+    "priority": "⭐⭐",
+    "highlights": {
+      "zh": [],
+      "en": []
+    },
+    "file": "pokerstars/2026-03-play-money-stars-complete.md"
+  },
+  {
+    "id": 12,
+    "platform": "PokerStars",
+    "title": {
+      "zh": "Sunday Billion",
+      "en": "Sunday Billion"
+    },
+    "type": "金币活动",
+    "time": {
+      "zh": "2026-03-14",
+      "en": "2026-03-14"
+    },
+    "amount": "N/A",
+    "priority": "⭐⭐",
+    "highlights": {
+      "zh": [],
+      "en": []
+    },
+    "file": "pokerstars/2026-03-sunday-billion-complete.md"
+  }
+];
+        
+        // 简单的Markdown渲染函数
+        function renderMarkdown(md) {
+            let html = md;
+            
+            // 标题（注意顺序，从h4到h1）
+            html = html.replace(/^#### (.+)$/gm, '<h4>$1</h4>');
+            html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+            html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+            html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+            
+            // 分隔线
+            html = html.replace(/^---$/gm, '<hr>');
+            
+            // 加粗
+            html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            
+            // 列表项
+            html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
+            
+            // 包裹连续的li为ul
+            html = html.replace(/(<li>.*?<\/li>\n?)+/gs, '<ul>$&</ul>');
+            
+            // 段落（简化处理）
+            html = html.split('\n\n').map(para => {
+                if (para.match(/^<[hul]/)) return para;
+                if (para.trim() === '') return '';
+                return '<p>' + para + '</p>';
+            }).join('\n');
+            
+            return html;
+        }
+        
+        const originalTexts = {
+            "coinpoker/2026-03-03-iphone-launch-complete.md": `# CoinPoker - iPhone App 发布
+
+## 📋 活动基本信息
+
+### 活动名称
+**CoinPoker iPhone App Launch**
+
+### 活动时间
+- **发布日期:** 2026年3月3日
+- **类型:** 产品发布
+
+### 最后更新
+2026年3月3日
+
+### 信息来源
+- **Twitter:** @CoinPoker_OFF (推文发布于2026-03-03)
+- **注:** 具体推文链接待补充（需要Twitter登录后获取）
+- **发现日期:** 2026-03-12
+- **社交媒体数据:** 浏览20K，点赞153，转发18，评论44
+
+---
+
+## 🎯 活动目的
+
+**核心目的:** 扩展移动端用户群，配合新平台发布推广
+
+---
+
+## 📐 活动机制详解
+
+### 产品信息
+- **平台:** iPhone (iOS)
+- **下载方式:**
+  - App Store（部分地区可用）
+  - 官网直接下载（所有地区）
+
+### 推广策略
+- **主要渠道:** Twitter官方账号公告
+- **特色:** 提供多种下载途径，绕过App Store地区限制
+- **配合活动:** 与100% Rakeback活动同期推出
+
+---
+
+## 🔧 技术实现机制
+
+### 下载方式
+- **App Store:** 标准应用商店下载
+- **官网直下:** 绕过地区限制，直接安装
+
+### 地区覆盖
+- **全球可用:** 通过官网下载解决地区限制问题
+
+---
+
+## 🎯 可复制的关键要素
+
+### 1. 多渠道下载策略
+- **App Store + 官网直下**
+- 解决地区限制问题
+- 降低下载门槛
+
+### 2. 产品 + 营销联动
+- **iPhone发布 + 100% Rakeback**
+- 产品更新配合促销活动
+- 最大化曝光效果
+
+### 3. 社交媒体推广
+- **Twitter作为主要公告渠道**
+- 互动率1.08%（中等水平）
+- 44条评论显示用户关注度
+
+---
+
+## 🚀 对我们平台的启示
+
+### 可立即学习
+1. **移动端是必须的**
+   - 扩大用户触达
+   - 提升用户便利性
+
+2. **多种下载方式**
+   - APK直装（Android）
+   - 官网下载（绕过限制）
+   - 应用商店（标准渠道）
+
+3. **产品发布配合营销**
+   - 新功能上线 = 促销活动
+   - 双重吸引力
+
+### 需要调整的地方
+1. **推广渠道:** 除Twitter外，增加Telegram、Discord等
+2. **下载引导:** 提供详细的安装教程
+3. **用户反馈:** 建立反馈收集机制
+
+---
+
+## ✅ 总结
+
+这是一个**标准的产品发布推广**：
+
+1. **多渠道下载:** 解决地区限制
+2. **社交媒体推广:** Twitter公告
+3. **配合营销活动:** 与100% Rakeback联动
+4. **用户关注度:** 中等（20K浏览，44评论）
+
+**核心逻辑:** 产品发布 + 促销活动 = 最大化用户增长
+`,
+            "coinpoker/2026-03-rakeback-complete.md": `# CoinPoker 100% Rakeback - 完整活动分析
+## 2026-03-12 深度调研
+
+---
+
+## 📋 活动基本信息
+
+### 活动名称
+**CoinPoker 100% Rakeback: All Rake Paid Back in March**
+
+### 活动时间
+- **Stage 1:** 2026年3月2日 - 3月15日
+- **Stage 2:** 2026年3月16日 - 3月31日
+- **总时长:** 30天
+
+### 最后更新
+2026年3月6日
+
+### 信息来源
+- **官方页面:** https://coinpoker.com/cn/promotions/rakeback/
+- **媒体报道:** worldpokerdeals.com, pokerlistings.com
+- **发现日期:** 2026-03-12
+
+---
+
+## 🎯 活动目的
+
+**核心目的：** 配合新版软件发布，用超高返水吸引用户体验新平台
+
+**官方表述：**
+- "New CoinPoker. New Rewards."
+- "The future of online poker is here, paying higher rakeback than ever."
+- "CoinPoker's 100% Rakeback promotion runs in March to unveil our all-new poker platform."
+
+---
+
+## 📐 活动机制详解
+
+### Stage 1: 直接返水（3月2-15日）
+
+#### 现金桌返水
+- **返水比例:** 100%
+- **发放方式:** 每日直接返还到账户
+- **适用游戏:** 
+  - Texas Hold'em
+  - PLO (Pot Limit Omaha)
+  - PLO5 (5-Card PLO)
+  - 6-Card PLO
+  - Bomb Pot
+  - All-In or Fold
+
+#### 锦标赛返水
+- **返水比例:** 100% 买入费用
+- **发放方式:** 每日直接返还
+- **适用类型:** 所有锦标赛
+
+#### 领取方式
+1. 每天访问钱包（Wallet）
+2. 将返水转移到CoinPoker余额
+3. **无限制:** 可随时提现，无流水要求
+
+---
+
+### Stage 2: 促销再分配（3月16-31日）
+
+#### 现金桌返水
+- **方式:** Splash pots（彩池）+ 排行榜
+- **发放:** 全天多次发放
+- **特点:** 通过游戏内机制分配，增加互动性
+
+#### 锦标赛返水
+- **返水比例:** 100% 买入费用
+- **发放时间:** 次日7:00 UTC起
+- **发放方式:** 自动到账
+
+---
+
+## 💡 活动设计亮点
+
+### 1. 两阶段设计的深层逻辑
+
+**Stage 1（直接返水）:**
+- **目的:** 快速吸引用户，降低尝试门槛
+- **优势:** 简单直接，用户立即看到收益
+- **适合:** 新用户和观望用户
+
+**Stage 2（游戏化返水）:**
+- **目的:** 增加用户粘性和游戏时长
+- **优势:** Splash pots和排行榜增加趣味性
+- **适合:** 已激活用户，提升留存
+
+### 2. 配合产品发布的策略
+
+**新软件特性:**
+- 新App和软件
+- 新游戏格式（Bomb Pot, All-In or Fold, 6-Card PLO）
+- 新奖励系统
+- 新现金桌功能
+- 新锦标赛功能
+- 新设计和互动方式
+
+**联动策略:**
+- 用100%返水吸引用户下载新App
+- 用新游戏格式增加新鲜感
+- 用高返水补偿用户学习新平台的成本
+
+### 3. 无限制提现的信任建立
+
+- **无流水要求:** 返水可立即提现
+- **建立信任:** 证明平台不是"套路"用户
+- **降低风险感知:** 用户觉得"反正能提现"
+
+---
+
+## 🔧 技术实现机制
+
+### 返水计算
+- **现金桌:** 基于实际支付的rake
+- **锦标赛:** 基于买入费用（entry fee）
+
+### 发放机制
+- **Stage 1:** 每日结算，手动领取
+- **Stage 2:** 
+  - 现金桌：实时通过Splash pots
+  - 锦标赛：次日自动到账
+
+### 防滥用措施
+- 条款中提到"Security & Fair Play"
+- 可能有反作弊检测
+- 可能限制多账号
+
+---
+
+## 📊 活动效果推测
+
+### 对用户的吸引力
+1. **100%返水** - 行业罕见（常规33%）
+2. **无限制提现** - 降低风险
+3. **新游戏体验** - 增加新鲜感
+4. **整月活动** - 足够时间体验
+
+### 对平台的价值
+1. **新用户获取** - 低成本获客（返水成本 < 广告成本）
+2. **产品推广** - 强制用户体验新平台
+3. **数据收集** - 了解新功能的用户反馈
+4. **品牌建设** - "最高返水"的市场定位
+
+---
+
+## 🎯 可复制的关键要素
+
+### 1. 产品更新 + 活动联动
+- **时机:** 重大产品更新时
+- **策略:** 用超高奖励补偿用户学习成本
+- **效果:** 加速新功能采用
+
+### 2. 两阶段设计
+- **第一阶段:** 简单直接，快速吸引
+- **第二阶段:** 游戏化，提升留存
+- **过渡:** 自然引导用户从"尝试"到"留存"
+
+### 3. 无限制提现
+- **心理:** 降低用户风险感知
+- **信任:** 证明平台诚意
+- **转化:** 提高注册和充值意愿
+
+### 4. 全游戏覆盖
+- **现金桌 + 锦标赛** 都有返水
+- **所有游戏类型** 都参与
+- **最大化** 用户参与面
+
+---
+
+## 🚀 对我们平台的启示
+
+### 可立即学习
+1. **产品更新时的活动设计**
+   - 新功能上线 = 超高返水/奖励
+   - 补偿用户学习成本
+   
+2. **两阶段活动设计**
+   - 前期：简单直接（如直接返现）
+   - 后期：游戏化（如排行榜、任务）
+
+3. **无限制提现策略**
+   - 首充奖励可以设置"无流水"档位
+   - 建立用户信任
+
+### 需要调整的地方
+1. **返水比例:** 100%成本太高，可以50-70%
+2. **时长:** 整月可能太长，可以2周测试
+3. **游戏覆盖:** 根据我们的游戏模块调整
+
+---
+
+## ✅ 总结
+
+这是一个**教科书级别的产品发布活动**：
+
+1. **目的明确:** 推广新平台
+2. **机制清晰:** 两阶段设计，从吸引到留存
+3. **执行到位:** 100%返水 + 无限制提现
+4. **时机完美:** 配合产品更新
+5. **覆盖全面:** 所有游戏类型
+
+**核心逻辑:** 用短期高成本（100%返水）换取长期价值（新平台用户基础）
+`,
+            "coinpoker/2026-03-signup-bonus-complete.md": `# CoinPoker - 150% 首充奖励
+
+## 📋 活动基本信息
+
+### 活动名称
+**CoinPoker 150% Welcome Bonus**
+
+### 活动时间
+- **状态:** 长期活动
+- **注:** 2026年3月暂停，被100% Rakeback活动替代，将于4月回归
+
+### 最后更新
+2026年3月4日
+
+### 信息来源
+- **官方页面:** https://coinpoker.com/cn/promotions/welcome-bonus/
+- **发现日期:** 2026-03-12
+
+---
+
+## 🎯 活动目的
+
+**核心目的:** 吸引新用户注册并进行首次充值
+
+---
+
+## 📐 活动机制详解
+
+### 参与门槛
+- **用户要求:** 新注册用户
+- **最低充值:** 10美元（或等值加密货币）
+- **无需Bonus Code**
+
+### 奖励结构
+- **匹配比例:** 150%
+- **最高奖励:** \$2,000
+- **计算方式:**
+  - 充值 \$100 → 获得 \$150 奖励
+  - 充值 \$1,333+ → 获得最高 \$2,000 奖励
+
+### 奖励发放
+- **发放方式:** 通过玩真钱扑克逐步解锁
+- **解锁机制:** 每场比赛都会解锁部分奖励（非里程碑制）
+- **领取方式:** 自动且即时
+- **查看位置:** 钱包 → 练习筹码余额
+
+### 流水要求
+- **无明确说明:** 页面未提及具体流水倍数
+- **解锁方式:** 通过支付rake（抽水）解锁
+
+---
+
+## 🔧 技术实现机制
+
+### 充值方式
+- 加密货币钱包
+- 交易所
+- 银行卡
+
+### 奖励计算
+- 基于玩家支付的rake
+- 每场游戏自动计算解锁金额
+
+---
+
+## 🎯 可复制的关键要素
+
+### 1. 高匹配比例
+- **150% vs 行业常规100%**
+- 提升竞争力
+
+### 2. 渐进式解锁
+- **非里程碑制:** 每场游戏都有收益
+- **即时反馈:** 玩家持续看到进度
+
+### 3. 上限控制
+- **\$2,000上限:** 控制成本
+- **平衡吸引力与风险**
+
+---
+
+## 🚀 对我们平台的启示
+
+### 可立即学习
+1. **渐进式解锁优于里程碑制**
+   - 用户体验更好
+   - 降低流失率
+
+2. **清晰的查看入口**
+   - 钱包内直接显示
+   - 透明度建立信任
+
+3. **多种充值方式**
+   - 降低充值门槛
+   - 覆盖不同用户群
+
+### 需要调整的地方
+1. **匹配比例:** 150%成本较高，可测试100-125%
+2. **流水要求:** 需明确具体倍数（建议3-5倍）
+3. **上限设置:** 根据用户获取成本调整
+
+---
+
+## ✅ 总结
+
+这是一个**标准但优化的首充奖励活动**：
+
+1. **匹配比例高:** 150%高于行业平均
+2. **解锁机制好:** 渐进式优于里程碑
+3. **透明度高:** 实时查看进度
+4. **成本可控:** \$2,000上限
+
+**核心逻辑:** 用高匹配比例吸引新用户，用渐进式解锁提升留存
+`,
+            "coinpoker/2026-coinmasters-complete.md": `# CoinPoker - CoinMasters 金币大师赛
+
+## 📋 活动基本信息
+
+### 活动名称
+**CoinMasters（金币大师赛）**
+
+### 活动时间
+- **开始日期:** 2026年4月13日
+- **活动周期:** 10-18个月（长期活动）
+- **每周赛事:** 周一至周六（银币赛），周日（金币赛）
+
+### 最后更新
+2026年（活动页面）
+
+### 信息来源
+- **官方页面:** https://coinpoker.com/cn/promotions/coinmasters/
+- **发现日期:** 2026-03-12
+
+---
+
+## 🎯 活动目的
+
+**核心目的:** 通过长期锦标赛系列和实体奖品（金币/银币）建立品牌忠诚度和玩家粘性
+
+**特色:**
+- 由顶级扑克玩家 BenCB、Patrick Leonard 和 Mario Mosböck 联手打造
+- 实体金币/银币作为奖品
+- 最终总决赛桌竞争
+
+---
+
+## 📐 活动机制详解
+
+### 赛事结构
+
+#### 每日银币赛
+- **时间:** 周一至周六，下午5:05 UTC
+- **买入:** \$25
+- **奖励:** 获胜者获得对应当日的银币（共6枚不同银币）
+
+#### 每周金币赛
+- **时间:** 周日，下午5:05 UTC
+- **奖励:** 获胜者获得一枚金币
+
+### 晋级总决赛的三种途径
+
+#### 1. The Collector（收藏家）
+- **要求:** 最先收集齐七枚独特实体硬币
+- **名额:** 5名
+- **奖励:** 直接晋级总决赛桌
+
+#### 2. 锦标赛冠军
+- **要求:** 赢得特定锦标赛
+- **奖励:** 直接保送总决赛桌席位
+
+#### 3. 抽奖
+- **参与资格:** 活动结束时持有至少一枚硬币
+- **机制:** 硬币数量越多，中奖概率越大
+- **奖励:** 抽中者获得总决赛门票
+
+### 总决赛
+
+#### 名人堂免费扑克赛
+- **场次:** 三场
+- **总奖池:** \$100,000
+- **时间:** 总决赛局结束后举办
+
+---
+
+## 🔧 技术实现机制
+
+### 硬币交易规则
+- **限制:** 仅在玩家拥有所有七枚独特硬币后才可交易
+- **验证:** 需录制开箱视频（包裹内附提醒通知）
+
+### 保底机制
+- **灵活调整:** 可根据需要调整保底金额
+- **目标:** 确保活动在10-18个月内完成
+
+---
+
+## 🎯 可复制的关键要素
+
+### 1. 实体奖品策略
+- **金币/银币:** 增加收藏价值和仪式感
+- **差异化:** 每日不同的银币设计
+- **稀缺性:** 限量发行
+
+### 2. 长期活动设计
+- **10-18个月:** 建立长期用户粘性
+- **每周固定赛事:** 培养用户习惯
+- **多种晋级途径:** 照顾不同类型玩家
+
+### 3. 名人背书
+- **顶级玩家:** BenCB、Patrick Leonard、Mario Mosböck
+- **增加可信度和吸引力**
+
+### 4. 游戏化机制
+- **收集系统:** 七枚独特硬币
+- **抽奖机制:** 硬币越多概率越大
+- **总决赛目标:** 给玩家明确的追求目标
+
+---
+
+## 🚀 对我们平台的启示
+
+### 可立即学习
+1. **长期活动建立粘性**
+   - 不是一次性促销
+   - 培养用户长期参与习惯
+
+2. **实体奖品增加价值感**
+   - 可以是定制扑克筹码、奖杯等
+   - 增加仪式感和收藏价值
+
+3. **多种晋级途径**
+   - 收藏家（氪金玩家）
+   - 锦标赛冠军（技术玩家）
+   - 抽奖（普通玩家）
+
+4. **名人/KOL背书**
+   - 邀请知名玩家参与设计
+   - 增加活动可信度
+
+### 需要调整的地方
+1. **活动周期:** 10-18个月太长，可测试3-6个月
+2. **买入金额:** \$25可能偏高，可设置\$5-\$10档位
+3. **奖池规模:** \$100K总决赛可调整为\$10K-\$50K
+4. **实体奖品:** 根据预算设计（徽章、奖杯等）
+
+---
+
+## ✅ 总结
+
+这是一个**创新的长期锦标赛系列活动**：
+
+1. **实体奖品:** 金币/银币增加收藏价值
+2. **长期设计:** 10-18个月建立用户粘性
+3. **多种晋级:** 照顾不同类型玩家
+4. **名人背书:** 顶级玩家参与设计
+5. **游戏化:** 收集+抽奖+总决赛
+
+**核心逻辑:** 用长期活动和实体奖品建立品牌忠诚度，而非短期促销
+`,
+            "ggpoker/2026-03-11-100k-freeroll-complete.md": `# GGPoker - \$100K Freeroll (Twitter专属)
+
+## 📋 活动基本信息
+
+### 活动名称
+**\$100,000 Freeroll for X Followers**
+
+### 活动时间
+- **赛事时间:** 2026年3月14日 16:00 UTC
+- **Coupon发布:** 赛前90分钟（14:30 UTC）
+- **公告时间:** 2026年3月11日
+
+### 最后更新
+2026年3月11日
+
+### 信息来源
+- **Twitter:** @GGPoker (推文发布于2026-03-11)
+- **注:** 具体推文链接待补充（需要Twitter登录后获取）
+- **发现日期:** 2026-03-12
+- **社交媒体数据:** 浏览9.8K，点赞210，转发210，评论227
+
+---
+
+## 🎯 活动目的
+
+**核心目的:** 通过免费锦标赛吸引Twitter粉丝，增加社交媒体曝光和用户增长
+
+**特色:**
+- 零门槛参与（完全免费）
+- 社交媒体互动换取参赛资格
+- 高奖池吸引眼球
+
+---
+
+## 📐 活动机制详解
+
+### 参与条件
+1. **关注** @GGPoker on X (Twitter)
+2. **转发** 活动推文
+3. **评论** 活动推文
+4. **获取Coupon Code** - 赛前90分钟在Twitter发布
+
+### 活动限制
+- **名额限制:** 仅1,000个免费名额
+- **先到先得:** First come, first served
+- **平台限制:** 仅Twitter粉丝可参与
+
+### 奖池结构
+- **总奖池:** \$100,000
+- **类型:** Freeroll（免费锦标赛）
+- **具体分配:** 待确认
+
+---
+
+## 🔧 技术实现机制
+
+### Coupon发放机制
+- **发布时间:** 赛前90分钟（14:30 UTC）
+- **发布渠道:** Twitter @GGPoker
+- **领取方式:** 先到先得，1,000个名额
+
+### 参赛流程
+1. 完成社交媒体互动（关注+转发+评论）
+2. 等待Coupon发布
+3. 获取Coupon Code
+4. 在GGPoker客户端注册赛事
+
+---
+
+## 🎯 可复制的关键要素
+
+### 1. 社交媒体营销
+- **关注+转发+评论** = 涨粉+传播+互动
+- 互动率6.6%（远超常规<1%）
+- 低成本获客
+
+### 2. 稀缺性营销
+- **1,000名额限制** 制造紧迫感
+- **先到先得** 促使用户快速行动
+- **Coupon机制** 增加二次曝光
+
+### 3. 高奖池策略
+- **\$100K** 对免费赛事来说很高
+- 吸引眼球，提升话题性
+- 成本可控（Freeroll）
+
+### 4. 时间节奏
+- **提前3天公告** 给用户准备时间
+- **赛前90分钟发Coupon** 二次提醒
+- **周六下午** 用户空闲时间
+
+---
+
+## 🚀 对我们平台的启示
+
+### 可立即学习
+1. **用Freeroll换取社交媒体增长**
+   - 成本低（Freeroll）
+   - 效果好（6.6%互动率）
+   - 可定期举办
+
+2. **稀缺性制造紧迫感**
+   - 限制名额（1,000个）
+   - 先到先得
+   - Coupon机制
+
+3. **多渠道联动**
+   - Twitter公告
+   - Telegram同步
+   - Discord社区
+
+4. **时间节奏设计**
+   - 提前公告
+   - 赛前提醒
+   - 选择用户空闲时间
+
+### 需要调整的地方
+1. **奖池规模:** \$100K太高，可以\$5K-\$20K
+2. **推广渠道:** 除Twitter外，增加Telegram、Discord
+3. **名额限制:** 根据平台规模调整（500-2000）
+4. **频率:** 月度或季度举办
+
+---
+
+## ✅ 总结
+
+这是一个**高效的社交媒体营销活动**：
+
+1. **零门槛:** 完全免费参与
+2. **高互动:** 6.6%互动率（远超常规）
+3. **稀缺性:** 1,000名额限制
+4. **二次曝光:** Coupon赛前发布
+5. **低成本高效果:** Freeroll成本低，获客效果好
+
+**核心逻辑:** 用免费锦标赛换取社交媒体增长和品牌曝光
+`,
+            "888poker/2026-03-20-free-bonus-complete.md": `# 888poker - \$20 Free Bonus
+
+## 📋 活动基本信息
+
+### 活动名称
+**\$20 Free Bonus (No Deposit Needed)**
+
+### 活动时间
+- **类型:** 长期活动
+- **状态:** 进行中
+
+### 最后更新
+2026年3月13日
+
+### 信息来源
+- **官方页面:** https://ca.888poker.com/terms/poker-reg-bonus-8/
+- **发现日期:** 2026-03-13
+- **访问方式:** 通过美国代理访问
+
+---
+
+## 🎯 活动目的
+
+**核心目的:** 通过无需存款的免费奖金吸引新用户注册
+
+**特色:**
+- 零门槛（无需存款）
+- 即时奖励
+- 降低用户尝试成本
+
+---
+
+## 📐 活动机制详解
+
+### 参与条件
+- **用户要求:** 新注册用户
+- **存款要求:** 无需存款（NO DEPOSIT NEEDED）
+- **验证要求:** 待确认
+
+### 奖励结构
+- **奖励金额:** \$20
+- **发放方式:** 注册后自动发放（待确认）
+- **使用限制:** 待确认
+
+### 流水要求
+- **具体倍数:** 待确认
+- **游戏限制:** 待确认
+- **有效期:** 待确认
+
+---
+
+## 🔧 技术实现机制
+
+### 注册流程
+1. 访问888poker官网
+2. 完成注册
+3. 自动获得\$20奖金
+
+### 奖金类型
+- **可能是:** 练习筹码或真钱奖金
+- **具体类型:** 待确认
+
+---
+
+## 🎯 可复制的关键要素
+
+### 1. 零门槛策略
+- **无需存款** 降低用户尝试成本
+- 吸引更多新用户注册
+- 提高转化率
+
+### 2. 即时奖励
+- **注册即送** 即时满足感
+- 减少用户流失
+- 提高激活率
+
+### 3. 适中金额
+- **\$20** 既有吸引力又控制成本
+- 足够让用户体验游戏
+- 不会造成过高成本
+
+---
+
+## 🚀 对我们平台的启示
+
+### 可立即学习
+1. **无存款注册奖励**
+   - 降低新用户门槛
+   - 提高注册转化率
+   - 让用户先体验再决定
+
+2. **金额设置**
+   - \$20是合理的起点
+   - 可以根据平台调整为\$5-\$20
+   - 平衡吸引力和成本
+
+3. **简化流程**
+   - 注册即送
+   - 无需复杂操作
+   - 提升用户体验
+
+### 需要调整的地方
+1. **流水要求:** 需要明确具体倍数（建议3-5倍）
+2. **有效期:** 设置合理的使用期限（建议7-30天）
+3. **游戏限制:** 明确可用游戏类型
+4. **奖金类型:** 明确是真钱还是练习筹码
+
+---
+
+## ✅ 总结
+
+这是一个**经典的无存款注册奖励活动**：
+
+1. **零门槛:** 无需存款即可获得
+2. **即时奖励:** 注册即送\$20
+3. **低成本获客:** 吸引新用户尝试
+4. **简单直接:** 流程简单，易于理解
+
+**核心逻辑:** 用小额免费奖金降低新用户尝试门槛，提高注册转化率
+
+**注意:** 部分细节（流水要求、有效期等）需要进一步确认
+`,
+            "888poker/2026-03-888-welcome-bonus-complete.md": `# 888poker - \$888 Welcome Bonus
+
+## 📋 活动基本信息
+
+### 活动名称
+**\$888 Welcome Bonus**
+
+### 活动时间
+- **类型:** 长期活动
+- **状态:** 进行中
+
+### 最后更新
+2026年3月13日
+
+### 信息来源
+- **官方页面:** https://www.888poker.com/real-money-poker/deposit/bonus-policy-888/
+- **发现日期:** 2026-03-13
+- **访问方式:** 通过美国代理访问
+
+---
+
+## 🎯 活动目的
+
+**核心目的:** 通过高额首充奖励吸引新用户进行首次存款
+
+**特色:**
+- 高额奖金（\$888）
+- 需要Promo Code
+- 首充匹配奖励
+
+---
+
+## 📐 活动机制详解
+
+### 参与条件
+- **用户要求:** 新注册用户
+- **Promo Code:** NEW888（必须输入）
+- **最低存款:** 待确认
+
+### 奖励结构
+- **最高奖励:** \$888
+- **匹配比例:** 待确认（可能是100%）
+- **计算方式:** 待确认
+
+### 奖励发放
+- **发放方式:** 待确认（可能是分批释放）
+- **解锁机制:** 待确认（可能基于rake）
+- **领取方式:** 待确认
+
+### 流水要求
+- **具体倍数:** 待确认
+- **游戏限制:** 待确认
+- **有效期:** 待确认
+
+---
+
+## 🔧 技术实现机制
+
+### 参与流程
+1. 注册888poker账户
+2. 在存款时输入Promo Code: **NEW888**
+3. 完成首次存款
+4. 获得匹配奖金（最高\$888）
+
+### Promo Code机制
+- **追踪渠道:** 通过Code追踪用户来源
+- **防止滥用:** 限制新用户使用
+- **灵活性:** 可以为不同渠道设置不同Code
+
+---
+
+## 🎯 可复制的关键要素
+
+### 1. 高额奖金策略
+- **\$888** 是具有吸引力的数字
+- 高于行业平均水平
+- 制造话题性
+
+### 2. Promo Code机制
+- **追踪效果:** 精确追踪渠道ROI
+- **联盟营销:** 可以为不同联盟设置不同Code
+- **防止滥用:** 限制使用条件
+
+### 3. 首充专属
+- **针对性强:** 专门针对首次存款
+- **转化关键:** 首充是用户转化的关键节点
+- **成本可控:** 每个用户只能使用一次
+
+---
+
+## 🚀 对我们平台的启示
+
+### 可立即学习
+1. **Promo Code系统**
+   - 建立Code追踪机制
+   - 为不同渠道设置不同Code
+   - 精确计算渠道ROI
+
+2. **高额首充奖励**
+   - 用高额奖金吸引首充
+   - 平衡吸引力和成本
+   - 可以测试不同金额（\$500-\$1000）
+
+3. **分批释放机制**
+   - 避免一次性发放
+   - 提高用户留存
+   - 降低风险
+
+### 需要调整的地方
+1. **匹配比例:** 需要确认具体比例（建议100%）
+2. **最低存款:** 设置合理门槛（建议\$10-\$50）
+3. **流水要求:** 明确具体倍数（建议3-5倍）
+4. **释放机制:** 设计合理的解锁方式
+5. **有效期:** 设置使用期限（建议30-90天）
+
+---
+
+## ✅ 总结
+
+这是一个**高额首充匹配奖励活动**：
+
+1. **高额奖金:** \$888吸引眼球
+2. **Promo Code:** 追踪渠道效果
+3. **首充专属:** 针对关键转化节点
+4. **成本可控:** 每用户限用一次
+
+**核心逻辑:** 用高额首充奖励促进新用户完成首次存款，实现从注册到付费的转化
+
+**注意:** 多项细节（匹配比例、流水要求、释放机制等）需要进一步确认
+`,
+            "pokerstars/2026-03-50billion-chips-complete.md": `# PokerStars - 50 Billion Chips Giveaway
+
+## 📋 活动基本信息
+
+### 活动名称
+**Play for a share of 50 billion chips**
+
+### 活动时间
+- **类型:** 限时活动
+- **状态:** 进行中
+
+### 最后更新
+2026年3月14日
+
+### 信息来源
+- **官方页面:** https://www.pokerstars.com/poker/promotions/play-money-leader-boards-new/
+- **发现日期:** 2026-03-14
+
+---
+
+## 🎯 活动目的
+
+**核心目的:** 通过大额虚拟币赠送吸引用户参与
+
+**特色:**
+- 超大数字营销（500亿筹码）
+- 制造话题性
+- 激励竞争
+
+---
+
+## 🎮 活动类型
+
+- **主类型:** 金币活动
+- **子类型:** 大型赠送活动
+
+---
+
+## 📐 活动机制详解
+
+### 参与条件
+- **用户要求:** 所有用户
+- **货币类型:** Play Money（虚拟币）
+
+### 奖励结构
+- **总奖池:** 50,000,000,000 chips
+- **分配方式:** 排行榜或参与奖励
+- **奖励类型:** 虚拟筹码
+
+---
+
+## 💡 创新亮点
+
+### 优势
+1. **超大数字:** 500亿制造视觉冲击
+2. **全员参与:** 降低门槛
+3. **话题性:** 大数字容易传播
+4. **零成本:** 虚拟币成本为零
+
+### 适合我们平台吗？
+- ✅ **非常适合**
+- 建议：
+  - 用大数字营销（如10亿、100亿）
+  - 金币活动作为真钱活动的补充
+  - 吸引新用户和小额玩家
+
+---
+
+## 🎯 学习要点
+
+1. **大数字营销:** 500亿比5000万更有冲击力
+2. **虚拟币价值:** 虽然没有真实价值，但数字大仍有吸引力
+3. **全员参与:** 不设门槛最大化参与
+
+---
+
+## 📝 后续追踪
+- [ ] 了解具体分配机制
+- [ ] 监测参与人数
+- [ ] 评估转化效果
+`,
+            "pokerstars/2026-03-play-money-leaderboard-complete.md": `# PokerStars - Play Money Tournament Leader Boards
+
+## 📋 活动基本信息
+
+### 活动名称
+**Play Money Tournament Leader Boards**
+
+### 活动时间
+- **类型:** 长期活动
+- **状态:** 进行中
+
+### 最后更新
+2026年3月14日
+
+### 信息来源
+- **官方页面:** https://www.pokerstars.com/poker/promotions/play-money-tournament-leader-boards/
+- **发现日期:** 2026-03-14
+- **访问方式:** 通过代理访问
+
+---
+
+## 🎯 活动目的
+
+**核心目的:** 通过虚拟币锦标赛排行榜激励玩家参与
+
+**特色:**
+- 零风险（虚拟币）
+- 竞技性
+- 培养用户习惯
+
+---
+
+## 🎮 活动类型
+
+- **主类型:** 金币活动
+- **子类型:** 排行榜竞赛
+
+---
+
+## 📐 活动机制详解
+
+### 参与条件
+- **用户要求:** 所有用户
+- **货币类型:** Play Money（虚拟币）
+- **存款要求:** 无
+
+### 奖励结构
+- **奖励类型:** 虚拟筹码
+- **排行榜:** 按锦标赛表现排名
+- **发放方式:** 自动发放
+
+---
+
+## 💡 创新亮点
+
+### 优势
+1. **零门槛:** 无需真钱投入
+2. **培养习惯:** 让用户熟悉锦标赛玩法
+3. **转化漏斗:** 虚拟币玩家 → 真钱玩家
+4. **低成本运营:** 虚拟币成本几乎为零
+
+### 适合我们平台吗？
+- ✅ **非常适合**
+- 建议：
+  - 作为新用户引导
+  - 培养用户游戏习惯
+  - 设计虚拟币到真钱的转化路径
+
+---
+
+## 🎯 学习要点
+
+1. **虚拟币价值:** 虽然是虚拟币，但排行榜竞争仍有吸引力
+2. **用户培养:** 低风险环境让用户学习游戏
+3. **转化设计:** 需要设计从虚拟币到真钱的转化机制
+
+---
+
+## 📝 后续追踪
+- [ ] 研究虚拟币到真钱的转化率
+- [ ] 学习排行榜设计
+- [ ] 了解奖励结构
+
+---
+
+## 🔧 技术实现
+
+### 排行榜机制
+- 基于锦标赛表现
+- 实时更新
+- 周期性重置
+
+### 奖励发放
+- 自动结算
+- 虚拟筹码形式
+`,
+            "pokerstars/2026-03-play-money-schedule-complete.md": `# PokerStars - Play Money Tournament Schedule
+
+## 📋 活动基本信息
+
+### 活动名称
+**Play Money Tournament Schedule**
+
+### 活动时间
+- **类型:** 长期活动
+- **状态:** 进行中
+
+### 最后更新
+2026年3月14日
+
+### 信息来源
+- **官方页面:** https://www.pokerstars.com/poker/promotions/play-money-schedule/
+- **发现日期:** 2026-03-14
+
+---
+
+## 🎯 活动目的
+
+**核心目的:** 提供完整的虚拟币锦标赛时间表
+
+**特色:**
+- 定期赛事
+- 培养用户习惯
+- 零风险练习
+
+---
+
+## 🎮 活动类型
+
+- **主类型:** 金币活动
+- **子类型:** 锦标赛时间表
+
+---
+
+## 📐 活动机制详解
+
+### 参与条件
+- **用户要求:** 所有用户
+- **货币类型:** Play Money（虚拟币）
+- **买入:** 虚拟筹码
+
+### 赛事结构
+- **赛事类型:** 多种锦标赛格式
+- **时间安排:** 全天候覆盖
+- **奖励:** 虚拟筹码
+
+---
+
+## 💡 创新亮点
+
+### 优势
+1. **完整时间表:** 用户随时可以参与
+2. **多样化:** 不同格式满足不同需求
+3. **培养习惯:** 定期参与形成习惯
+4. **转化准备:** 熟悉后更容易转真钱
+
+### 适合我们平台吗？
+- ✅ **非常适合**
+- 建议：
+  - 提供完整的虚拟币赛事体系
+  - 覆盖不同时段
+  - 作为新手训练场
+
+---
+
+## 🎯 学习要点
+
+1. **完整体系:** 不是单次活动，而是持续的赛事体系
+2. **时间覆盖:** 全天候满足不同时区用户
+3. **格式多样:** MTT、SNG等多种格式
+`,
+            "pokerstars/2026-03-play-money-stars-complete.md": `# PokerStars - Play Money Stars
+
+## 📋 活动基本信息
+
+### 活动名称
+**Play Money Stars**
+
+### 活动时间
+- **类型:** 长期活动
+- **状态:** 进行中
+
+### 最后更新
+2026年3月14日
+
+### 信息来源
+- **官方页面:** https://www.pokerstars.com/poker/promotions/play-money-stars/
+- **发现日期:** 2026-03-14
+
+---
+
+## 🎯 活动目的
+
+**核心目的:** 虚拟币奖励系统，激励玩家持续参与
+
+---
+
+## 🎮 活动类型
+
+- **主类型:** 金币活动
+- **子类型:** 奖励系统
+
+---
+
+## 📐 活动机制详解
+
+### 参与条件
+- **用户要求:** 所有用户
+- **货币类型:** Play Money（虚拟币）
+
+### 奖励结构
+- **奖励类型:** 虚拟筹码
+- **获取方式:** 游戏参与
+
+---
+
+## 💡 创新亮点
+
+### 优势
+1. **持续激励:** 长期奖励系统
+2. **用户留存:** 保持用户活跃
+3. **零成本:** 虚拟币奖励
+
+---
+
+## 🎯 学习要点
+
+1. **奖励系统设计:** 持续激励机制
+2. **用户粘性:** 虚拟币也能提升留存
+`,
+            "pokerstars/2026-03-sunday-billion-complete.md": `# PokerStars - Sunday Billion
+
+## 📋 活动基本信息
+
+### 活动名称
+**Sunday Billion**
+
+### 活动时间
+- **类型:** 每周日定期赛事
+- **状态:** 进行中
+
+### 最后更新
+2026年3月14日
+
+### 信息来源
+- **官方页面:** https://www.pokerstars.com/poker/promotions/sunday-billion/
+- **发现日期:** 2026-03-14
+
+---
+
+## 🎯 活动目的
+
+**核心目的:** 每周日的旗舰虚拟币锦标赛
+
+**特色:**
+- 固定时间（周日）
+- 大额奖池（10亿筹码）
+- 品牌化赛事
+
+---
+
+## 🎮 活动类型
+
+- **主类型:** 金币活动
+- **子类型:** 旗舰锦标赛
+
+---
+
+## 📐 活动机制详解
+
+### 参与条件
+- **用户要求:** 所有用户
+- **货币类型:** Play Money（虚拟币）
+- **时间:** 每周日
+
+### 奖励结构
+- **奖池:** 1,000,000,000 chips（10亿筹码）
+- **奖励类型:** 虚拟筹码
+- **分配:** 按名次分配
+
+---
+
+## 💡 创新亮点
+
+### 优势
+1. **品牌化赛事:** "Sunday Billion"易记
+2. **固定时间:** 培养用户周日参与习惯
+3. **大数字营销:** 10亿筹码有冲击力
+4. **旗舰定位:** 虚拟币玩家的"周日百万"
+
+### 适合我们平台吗？
+- ✅ **非常适合**
+- 建议：
+  - 创建自己的旗舰虚拟币赛事
+  - 固定时间（如周日）
+  - 用大数字命名（如"周日十亿"）
+  - 作为品牌活动推广
+
+---
+
+## 🎯 学习要点
+
+1. **品牌化:** 给赛事起个响亮的名字
+2. **固定时间:** 培养用户习惯
+3. **旗舰定位:** 虚拟币也需要旗舰赛事
+4. **大数字:** 10亿比100万更吸引人
+
+---
+
+## 📝 后续追踪
+- [ ] 了解参与人数
+- [ ] 学习赛事结构
+- [ ] 评估品牌效应
+`
+        };
+        
+        let filters = { platform: 'all', type: 'all', search: '' };
+        
+        function render() {
+            let filtered = activities.filter(a => {
+                if (filters.platform !== 'all' && a.platform !== filters.platform) return false;
+                if (filters.type !== 'all' && !a.type.includes(filters.type)) return false;
+                if (filters.search) {
+                    const s = filters.search.toLowerCase();
+                    const title = typeof a.title === 'object' ? a.title[currentLang] : a.title;
+                    return title.toLowerCase().includes(s) || a.platform.toLowerCase().includes(s);
+                }
+                return true;
+            });
+            
+            document.getElementById('grid').innerHTML = filtered.map(a => {
+                const title = typeof a.title === 'object' ? a.title[currentLang] : a.title;
+                const time = typeof a.time === 'object' ? a.time[currentLang] : a.time;
+                const highlights = typeof a.highlights === 'object' ? a.highlights[currentLang] : a.highlights;
+                
+                return `
+                <div class="activity-card" onclick="showDetail(${a.id})">
+                    <div class="activity-header">
+                        <div class="activity-platform">${a.platform}</div>
+                        <div class="activity-title">${a.priority} ${title}</div>
+                        <span class="activity-type">${a.type}</span>
+                    </div>
+                    <div class="activity-body">
+                        <div class="activity-meta">
+                            <div class="meta-item">
+                                <div class="meta-label">${i18n[currentLang]['activity-time']}</div>
+                                <div class="meta-value">${time}</div>
+                            </div>
+                            <div class="meta-item">
+                                <div class="meta-label">${i18n[currentLang]['activity-amount']}</div>
+                                <div class="meta-value">${a.amount}</div>
+                            </div>
+                        </div>
+                        <div class="activity-highlights">
+                            <h4>${i18n[currentLang]['highlights']}</h4>
+                            <ul>${highlights.slice(0,3).map(h => `<li>${h}</li>`).join('')}</ul>
+                        </div>
+                    </div>
+                </div>
+            `}).join('');
+        }
+        
+        function showDetail(id) {
+            const a = activities.find(x => x.id === id);
+            const title = typeof a.title === 'object' ? a.title[currentLang] : a.title;
+            const time = typeof a.time === 'object' ? a.time[currentLang] : a.time;
+            const threshold = typeof a.threshold === 'object' ? a.threshold[currentLang] : a.threshold;
+            const release = typeof a.release === 'object' ? a.release[currentLang] : a.release;
+            const duration = typeof a.duration === 'object' ? a.duration[currentLang] : a.duration;
+            const games = typeof a.games === 'object' ? a.games[currentLang] : a.games;
+            const wagering = typeof a.wagering === 'object' ? a.wagering[currentLang] : a.wagering;
+            const highlights = typeof a.highlights === 'object' ? a.highlights[currentLang] : a.highlights;
+            
+            document.getElementById('modalTitle').textContent = title;
+            
+            document.getElementById('tabSummary').innerHTML = `
+                <div class="detail-section">
+                    <h3>${i18n[currentLang]['basic-info']}</h3>
+                    <div class="detail-grid">
+                        <div class="detail-item"><strong>${i18n[currentLang]['platform']}</strong><span>${a.platform}</span></div>
+                        <div class="detail-item"><strong>${i18n[currentLang]['type']}</strong><span>${a.type}</span></div>
+                        <div class="detail-item"><strong>${i18n[currentLang]['time']}</strong><span>${time}</span></div>
+                        <div class="detail-item"><strong>${i18n[currentLang]['priority']}</strong><span>${a.priority}</span></div>
+                    </div>
+                </div>
+                <div class="detail-section">
+                    <h3>${i18n[currentLang]['rules']}</h3>
+                    <div class="detail-grid">
+                        <div class="detail-item"><strong>${i18n[currentLang]['threshold']}</strong><span>${threshold}</span></div>
+                        <div class="detail-item"><strong>${i18n[currentLang]['amount']}</strong><span>${a.amount}</span></div>
+                        <div class="detail-item"><strong>${i18n[currentLang]['release']}</strong><span>${release}</span></div>
+                        <div class="detail-item"><strong>${i18n[currentLang]['duration']}</strong><span>${duration}</span></div>
+                        <div class="detail-item"><strong>${i18n[currentLang]['games']}</strong><span>${games}</span></div>
+                        <div class="detail-item"><strong>${i18n[currentLang]['wagering']}</strong><span>${wagering}</span></div>
+                    </div>
+                </div>
+                <div class="detail-section">
+                    <h3>${i18n[currentLang]['innovation']}</h3>
+                    <ul style="list-style:none;padding:0;">
+                        ${highlights.map(h => `<li style="padding:0.5rem 0;padding-left:1.5rem;position:relative;">
+                            <span style="position:absolute;left:0;color:#667eea;font-weight:bold;">✓</span>${h}
+                        </li>`).join('')}
+                    </ul>
+                </div>
+            `;
+            
+            const originalMd = originalTexts[a.file] || '原文加载中...';
+            document.getElementById('tabOriginal').innerHTML = `
+                <div class="original-content">${renderMarkdown(originalMd)}</div>
+            `;
+            
+            document.getElementById('modal').classList.add('active');
+            switchTab('summary');
+        }
+        
+        function closeModal() {
+            document.getElementById('modal').classList.remove('active');
+        }
+        
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            if (tab === 'summary') {
+                document.querySelector('[onclick*="summary"]').classList.add('active');
+                document.getElementById('tabSummary').classList.add('active');
+            } else {
+                document.querySelector('[onclick*="original"]').classList.add('active');
+                document.getElementById('tabOriginal').classList.add('active');
+            }
+        }
+        
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const filter = this.dataset.filter;
+                const value = this.dataset.value;
+                document.querySelectorAll(`[data-filter="${filter}"]`).forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                filters[filter] = value;
+                render();
+            });
+        });
+        
+        document.getElementById('searchBox').addEventListener('input', e => {
+            filters.search = e.target.value;
+            render();
+        });
+        
+        document.getElementById('modal').addEventListener('click', e => {
+            if (e.target.id === 'modal') closeModal();
+        });
+        
+        render();
+    </script>
+</body>
+</html>
